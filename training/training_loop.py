@@ -207,7 +207,8 @@ def training_loop(
             opt_kwargs = dnnlib.EasyDict(opt_kwargs)
             opt_kwargs.lr = opt_kwargs.lr * mb_ratio
             opt_kwargs.betas = [beta ** mb_ratio for beta in opt_kwargs.betas]
-            opt = dnnlib.util.construct_class_by_name(module.parameters(), **opt_kwargs) # subclass of torch.optim.Optimizer
+            # opt = dnnlib.util.construct_class_by_name(module.parameters(), **opt_kwargs) # subclass of torch.optim.Optimizer
+            opt = torch.optim.SGD(module.parameters(), lr=0.00001, momentum=0.9)
             phases += [dnnlib.EasyDict(name=name+'main', module=module, opt=opt, interval=1)]
             phases += [dnnlib.EasyDict(name=name+'reg', module=module, opt=opt, interval=reg_interval)]
     for phase in phases:
@@ -299,8 +300,12 @@ def training_loop(
                 # for param in phase.module.parameters():
                 #     if param.grad is not None:
                 #         misc.nan_to_num(param.grad, nan=0, posinf=1e5, neginf=-1e5, out=param.grad)
-                phase.opt.step()
-                pass
+                if 'G' in phase['name']:
+                    phase.opt.step()
+                    pass
+                elif 'D' in phase['name']:
+                    phase.opt.step()
+                    pass
             if phase.end_event is not None:
                 phase.end_event.record(torch.cuda.current_stream(device))
 

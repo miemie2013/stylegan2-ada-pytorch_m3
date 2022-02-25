@@ -68,6 +68,8 @@ class StyleGAN2Loss(Loss):
         if do_Gmain:
             with torch.autograd.profiler.record_function('Gmain_forward'):
                 gen_img, _gen_ws = self.run_G(gen_z, gen_c, sync=(sync and not do_Gpl), dic=None, pre_name=phase) # May get synced by Gpl.
+                d_gen_ws_dgen_z = torch.autograd.grad(outputs=[_gen_ws.sum()], inputs=[gen_z], create_graph=True, only_inputs=True)[0]
+                dic[phase + 'd_gen_ws_dgen_z'] = d_gen_ws_dgen_z.cpu().detach().numpy()
                 dic[phase + 'gen_img'] = gen_img.cpu().detach().numpy()
                 dic[phase + '_gen_ws'] = _gen_ws.cpu().detach().numpy()
                 gen_logits = self.run_D(gen_img, gen_c, sync=False)
