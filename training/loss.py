@@ -57,7 +57,7 @@ class StyleGAN2Loss(Loss):
             logits = self.D(img, c)
         return logits
 
-    def accumulate_gradients(self, phase, real_img, real_c, gen_z, gen_c, sync, gain, dic):
+    def accumulate_gradients(self, phase, real_img, real_c, gen_z, gen_c, sync, gain, dic, save_npz):
         assert phase in ['Gmain', 'Greg', 'Gboth', 'Dmain', 'Dreg', 'Dboth']
         do_Gmain = (phase in ['Gmain', 'Gboth'])
         do_Dmain = (phase in ['Dmain', 'Dboth'])
@@ -69,11 +69,27 @@ class StyleGAN2Loss(Loss):
             with torch.autograd.profiler.record_function('Gmain_forward'):
                 gen_img, _gen_ws = self.run_G(gen_z, gen_c, sync=(sync and not do_Gpl), dic=None, pre_name=phase) # May get synced by Gpl.
                 d_gen_ws_dgen_z = torch.autograd.grad(outputs=[_gen_ws.sum()], inputs=[gen_z], create_graph=True, only_inputs=True)[0]
-                dic[phase + 'd_gen_ws_dgen_z'] = d_gen_ws_dgen_z.cpu().detach().numpy()
-                dic[phase + 'gen_img'] = gen_img.cpu().detach().numpy()
-                dic[phase + '_gen_ws'] = _gen_ws.cpu().detach().numpy()
+                if save_npz:
+                    dic[phase + 'd_gen_ws_dgen_z'] = d_gen_ws_dgen_z.cpu().detach().numpy()
+                    dic[phase + 'gen_img'] = gen_img.cpu().detach().numpy()
+                    dic[phase + '_gen_ws'] = _gen_ws.cpu().detach().numpy()
+                else:
+                    aaaaaaaaaa0 = dic[phase + 'd_gen_ws_dgen_z']
+                    aaaaaaaaaa1 = d_gen_ws_dgen_z.cpu().detach().numpy()
+                    ddd = np.mean((dic[phase + 'd_gen_ws_dgen_z'] - d_gen_ws_dgen_z.cpu().detach().numpy()) ** 2)
+                    print('ddd=%.6f' % ddd)
+                    aaaaaaaaa1 = dic[phase + 'gen_img']
+                    aaaaaaaaa2 = gen_img.cpu().detach().numpy()
+                    ddd = np.mean((dic[phase + 'gen_img'] - gen_img.cpu().detach().numpy()) ** 2)
+                    print('ddd=%.6f' % ddd)
+                    ddd = np.mean((dic[phase + '_gen_ws'] - _gen_ws.cpu().detach().numpy()) ** 2)
+                    print('ddd=%.6f' % ddd)
                 gen_logits = self.run_D(gen_img, gen_c, sync=False)
-                dic[phase + 'gen_logits'] = gen_logits.cpu().detach().numpy()
+                if save_npz:
+                    dic[phase + 'gen_logits'] = gen_logits.cpu().detach().numpy()
+                else:
+                    ddd = np.mean((dic[phase + 'gen_logits'] - gen_logits.cpu().detach().numpy()) ** 2)
+                    print('ddd=%.6f' % ddd)
                 training_stats.report('Loss/scores/fake', gen_logits)
                 training_stats.report('Loss/signs/fake', gen_logits.sign())
                 loss_Gmain = torch.nn.functional.softplus(-gen_logits) # -log(sigmoid(gen_logits))
@@ -87,15 +103,27 @@ class StyleGAN2Loss(Loss):
                 batch_size = gen_z.shape[0] // self.pl_batch_shrink
                 batch_size = max(batch_size, 1)
                 gen_img, gen_ws = self.run_G(gen_z[:batch_size], gen_c[:batch_size], sync=sync, dic=None, pre_name=phase)
-                dic[phase + 'gen_img'] = gen_img.cpu().detach().numpy()
-                dic[phase + 'gen_ws'] = gen_ws.cpu().detach().numpy()
+                if save_npz:
+                    dic[phase + 'gen_img'] = gen_img.cpu().detach().numpy()
+                    dic[phase + 'gen_ws'] = gen_ws.cpu().detach().numpy()
+                else:
+                    ddd = np.mean((dic[phase + 'gen_img'] - gen_img.cpu().detach().numpy()) ** 2)
+                    print('ddd=%.6f' % ddd)
+                    ddd = np.mean((dic[phase + 'gen_ws'] - gen_ws.cpu().detach().numpy()) ** 2)
+                    print('ddd=%.6f' % ddd)
                 # pl_noise = torch.randn_like(gen_img) / np.sqrt(gen_img.shape[2] * gen_img.shape[3])
                 pl_noise = torch.ones_like(gen_img) / np.sqrt(gen_img.shape[2] * gen_img.shape[3])
                 with torch.autograd.profiler.record_function('pl_grads'), conv2d_gradfix.no_weight_gradients():
                     pl_grads = torch.autograd.grad(outputs=[(gen_img * pl_noise).sum()], inputs=[gen_ws], create_graph=True, only_inputs=True)[0]
-                dic[phase + 'pl_grads'] = pl_grads.cpu().detach().numpy()
                 pl_lengths = pl_grads.square().sum(2).mean(1).sqrt()
-                dic[phase + 'pl_lengths'] = pl_lengths.cpu().detach().numpy()
+                if save_npz:
+                    dic[phase + 'pl_grads'] = pl_grads.cpu().detach().numpy()
+                    dic[phase + 'pl_lengths'] = pl_lengths.cpu().detach().numpy()
+                else:
+                    ddd = np.mean((dic[phase + 'pl_grads'] - pl_grads.cpu().detach().numpy()) ** 2)
+                    print('ddd=%.6f' % ddd)
+                    ddd = np.mean((dic[phase + 'pl_lengths'] - pl_lengths.cpu().detach().numpy()) ** 2)
+                    print('ddd=%.6f' % ddd)
                 pl_mean = self.pl_mean.lerp(pl_lengths.mean(), self.pl_decay)
                 self.pl_mean.copy_(pl_mean.detach())
                 pl_penalty = (pl_lengths - pl_mean).square()
@@ -110,10 +138,20 @@ class StyleGAN2Loss(Loss):
         if do_Dmain:
             with torch.autograd.profiler.record_function('Dgen_forward'):
                 gen_img, _gen_ws = self.run_G(gen_z, gen_c, sync=False, dic=None, pre_name=phase)
-                dic[phase + 'gen_img'] = gen_img.cpu().detach().numpy()
-                dic[phase + '_gen_ws'] = _gen_ws.cpu().detach().numpy()
+                if save_npz:
+                    dic[phase + 'gen_img'] = gen_img.cpu().detach().numpy()
+                    dic[phase + '_gen_ws'] = _gen_ws.cpu().detach().numpy()
+                else:
+                    ddd = np.mean((dic[phase + 'gen_img'] - gen_img.cpu().detach().numpy()) ** 2)
+                    print('ddd=%.6f' % ddd)
+                    ddd = np.mean((dic[phase + '_gen_ws'] - _gen_ws.cpu().detach().numpy()) ** 2)
+                    print('ddd=%.6f' % ddd)
                 gen_logits = self.run_D(gen_img, gen_c, sync=False) # Gets synced by loss_Dreal.
-                dic[phase + 'gen_logits'] = gen_logits.cpu().detach().numpy()
+                if save_npz:
+                    dic[phase + 'gen_logits'] = gen_logits.cpu().detach().numpy()
+                else:
+                    ddd = np.mean((dic[phase + 'gen_logits'] - gen_logits.cpu().detach().numpy()) ** 2)
+                    print('ddd=%.6f' % ddd)
                 training_stats.report('Loss/scores/fake', gen_logits)
                 training_stats.report('Loss/signs/fake', gen_logits.sign())
                 loss_Dgen = torch.nn.functional.softplus(gen_logits) # -log(1 - sigmoid(gen_logits))
@@ -127,23 +165,37 @@ class StyleGAN2Loss(Loss):
             with torch.autograd.profiler.record_function(name + '_forward'):
                 real_img_tmp = real_img.detach().requires_grad_(do_Dr1)
                 real_logits = self.run_D(real_img_tmp, real_c, sync=sync)
-                dic[phase + 'real_logits'] = real_logits.cpu().detach().numpy()
+                if save_npz:
+                    dic[phase + 'real_logits'] = real_logits.cpu().detach().numpy()
+                else:
+                    ddd = np.mean((dic[phase + 'real_logits'] - real_logits.cpu().detach().numpy()) ** 2)
+                    print('ddd=%.6f' % ddd)
                 training_stats.report('Loss/scores/real', real_logits)
                 training_stats.report('Loss/signs/real', real_logits.sign())
 
                 loss_Dreal = 0
                 if do_Dmain:
                     loss_Dreal = torch.nn.functional.softplus(-real_logits) # -log(sigmoid(real_logits))
-                    dic[phase + 'loss_Dreal'] = loss_Dreal.cpu().detach().numpy()
+                    if save_npz:
+                        dic[phase + 'loss_Dreal'] = loss_Dreal.cpu().detach().numpy()
+                    else:
+                        ddd = np.mean((dic[phase + 'loss_Dreal'] - loss_Dreal.cpu().detach().numpy()) ** 2)
+                        print('ddd=%.6f' % ddd)
                     training_stats.report('Loss/D/loss', loss_Dgen + loss_Dreal)
 
                 loss_Dr1 = 0
                 if do_Dr1:
                     with torch.autograd.profiler.record_function('r1_grads'), conv2d_gradfix.no_weight_gradients():
                         r1_grads = torch.autograd.grad(outputs=[real_logits.sum()], inputs=[real_img_tmp], create_graph=True, only_inputs=True)[0]
-                    dic[phase + 'r1_grads'] = r1_grads.cpu().detach().numpy()
                     r1_penalty = r1_grads.square().sum([1,2,3])
-                    dic[phase + 'r1_penalty'] = r1_penalty.cpu().detach().numpy()
+                    if save_npz:
+                        dic[phase + 'r1_grads'] = r1_grads.cpu().detach().numpy()
+                        dic[phase + 'r1_penalty'] = r1_penalty.cpu().detach().numpy()
+                    else:
+                        ddd = np.mean((dic[phase + 'r1_grads'] - r1_grads.cpu().detach().numpy()) ** 2)
+                        print('ddd=%.6f' % ddd)
+                        ddd = np.mean((dic[phase + 'r1_penalty'] - r1_penalty.cpu().detach().numpy()) ** 2)
+                        print('ddd=%.6f' % ddd)
                     loss_Dr1 = r1_penalty * (self.r1_gamma / 2)
                     training_stats.report('Loss/r1_penalty', r1_penalty)
                     training_stats.report('Loss/D/reg', loss_Dr1)

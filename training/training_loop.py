@@ -207,8 +207,8 @@ def training_loop(
             opt_kwargs = dnnlib.EasyDict(opt_kwargs)
             opt_kwargs.lr = opt_kwargs.lr * mb_ratio
             opt_kwargs.betas = [beta ** mb_ratio for beta in opt_kwargs.betas]
-            # opt = dnnlib.util.construct_class_by_name(module.parameters(), **opt_kwargs) # subclass of torch.optim.Optimizer
-            opt = torch.optim.SGD(module.parameters(), lr=0.00001, momentum=0.9)
+            opt = dnnlib.util.construct_class_by_name(module.parameters(), **opt_kwargs) # subclass of torch.optim.Optimizer
+            # opt = torch.optim.SGD(module.parameters(), lr=0.00001, momentum=0.9)
             phases += [dnnlib.EasyDict(name=name+'main', module=module, opt=opt, interval=1)]
             phases += [dnnlib.EasyDict(name=name+'reg', module=module, opt=opt, interval=reg_interval)]
     for phase in phases:
@@ -261,16 +261,29 @@ def training_loop(
     # while True:
     while batch_idx < 20:
         dic = {}
+        print('======================== batch%.5d.npz ========================'%batch_idx)
+        save_npz = True    # 为True时表示，记录前20步的输入、输出、梯度。
+        # save_npz = False   # 为False时表示，读取为True时保存的输入，自己和自己对齐。
+        if not save_npz:
+            dic = np.load('batch%.5d.npz' % batch_idx)
 
         # Fetch training data.
         with torch.autograd.profiler.record_function('data_fetch'):
             phase_real_img, phase_real_c = next(training_set_iterator)
-            dic['phase_real_img'] = phase_real_img.cpu().detach().numpy()
+            if save_npz:
+                dic['phase_real_img'] = phase_real_img.cpu().detach().numpy()
+            else:
+                aaaaaaaaa = dic['phase_real_img']
+                phase_real_img = torch.Tensor(aaaaaaaaa).cuda().to(torch.float32)
 
             phase_real_img = (phase_real_img.to(device).to(torch.float32) / 127.5 - 1).split(batch_gpu)
             phase_real_c = phase_real_c.to(device).split(batch_gpu)
             all_gen_z = torch.randn([len(phases) * batch_size, G.z_dim], device=device)
-            dic['all_gen_z'] = all_gen_z.cpu().detach().numpy()
+            if save_npz:
+                dic['all_gen_z'] = all_gen_z.cpu().detach().numpy()
+            else:
+                bbbbbbbbb = dic['all_gen_z']
+                all_gen_z = torch.Tensor(bbbbbbbbb).cuda().to(torch.float32)
             all_gen_z = [phase_gen_z.split(batch_gpu) for phase_gen_z in all_gen_z.split(batch_size)]
             all_gen_c = [training_set.get_label(np.random.randint(len(training_set))) for _ in range(len(phases) * batch_size)]
             all_gen_c = torch.from_numpy(np.stack(all_gen_c)).pin_memory().to(device)
@@ -291,21 +304,24 @@ def training_loop(
             for round_idx, (real_img, real_c, gen_z, gen_c) in enumerate(zip(phase_real_img, phase_real_c, phase_gen_z, phase_gen_c)):
                 sync = (round_idx == batch_size // (batch_gpu * num_gpus) - 1)
                 gain = phase.interval
-                loss.accumulate_gradients(phase=phase.name, real_img=real_img, real_c=real_c, gen_z=gen_z, gen_c=gen_c, sync=sync, gain=gain, dic=dic)
+                loss.accumulate_gradients(phase=phase.name, real_img=real_img, real_c=real_c, gen_z=gen_z, gen_c=gen_c, sync=sync, gain=gain, dic=dic, save_npz=save_npz)
 
             # Update weights.
-            np.savez('batch%.5d'%batch_idx, **dic)
+            if save_npz:
+                np.savez('batch%.5d'%batch_idx, **dic)
             phase.module.requires_grad_(False)
             with torch.autograd.profiler.record_function(phase.name + '_opt'):
                 # for param in phase.module.parameters():
                 #     if param.grad is not None:
                 #         misc.nan_to_num(param.grad, nan=0, posinf=1e5, neginf=-1e5, out=param.grad)
-                if 'G' in phase['name']:
-                    phase.opt.step()
-                    pass
-                elif 'D' in phase['name']:
-                    phase.opt.step()
-                    pass
+                phase.opt.step()
+                pass
+                # if 'G' in phase['name']:
+                #     phase.opt.step()
+                #     pass
+                # elif 'D' in phase['name']:
+                #     phase.opt.step()
+                #     pass
             if phase.end_event is not None:
                 phase.end_event.record(torch.cuda.current_stream(device))
 
