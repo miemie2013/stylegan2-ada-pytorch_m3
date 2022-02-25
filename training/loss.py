@@ -83,6 +83,7 @@ class StyleGAN2Loss(Loss):
         if do_Gpl:
             with torch.autograd.profiler.record_function('Gpl_forward'):
                 batch_size = gen_z.shape[0] // self.pl_batch_shrink
+                batch_size = max(batch_size, 1)
                 gen_img, gen_ws = self.run_G(gen_z[:batch_size], gen_c[:batch_size], sync=sync, dic=None, pre_name=phase)
                 dic[phase + 'gen_img'] = gen_img.cpu().detach().numpy()
                 dic[phase + 'gen_ws'] = gen_ws.cpu().detach().numpy()

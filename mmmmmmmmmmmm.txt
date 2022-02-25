@@ -25,6 +25,14 @@ batch_size = gen_z.shape[0] // self.pl_batch_shrink
 梯度对齐：(如果显存不足，借用一下11G的卡)
 python train.py --outdir ./StyleGAN2_ADA_Output --data ../data/data42681/afhq/train/cat --gpus=1 --cfg paper512 --batch 2 --aug noaug --resume afhqcat.pkl
 
+python train.py --outdir ./StyleGAN2_ADA_Output --data ../data/data42681/afhq/train/cat --gpus=1 --cfg paper512 --batch 1 --aug noaug --resume afhqcat.pkl
+
+
+python train.py --outdir ./StyleGAN2_ADA_Output --data ../data/data42681/afhq/train/cat --gpus=1 --cfg paper512 --batch 2 --resume afhqcat.pkl
+
+
+nohup python train.py --outdir ./StyleGAN2_ADA_Output --data ../data/data42681/afhq/train/cat --gpus=1 --cfg paper512 --batch 2 --resume afhqcat.pkl > stylegan2ada.log 2>&1 &
+
 
 
 python train.py --outdir ./StyleGAN2_ADA_Output --data ./datasets/afhqcat.zip --gpus=1 --cfg paper512 --batch 2
