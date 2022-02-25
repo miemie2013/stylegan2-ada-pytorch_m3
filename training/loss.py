@@ -76,19 +76,19 @@ class StyleGAN2Loss(Loss):
                 else:
                     aaaaaaaaaa0 = dic[phase + 'd_gen_ws_dgen_z']
                     aaaaaaaaaa1 = d_gen_ws_dgen_z.cpu().detach().numpy()
-                    ddd = np.mean((dic[phase + 'd_gen_ws_dgen_z'] - d_gen_ws_dgen_z.cpu().detach().numpy()) ** 2)
+                    ddd = np.sum((dic[phase + 'd_gen_ws_dgen_z'] - d_gen_ws_dgen_z.cpu().detach().numpy()) ** 2)
                     print('ddd=%.6f' % ddd)
                     aaaaaaaaa1 = dic[phase + 'gen_img']
                     aaaaaaaaa2 = gen_img.cpu().detach().numpy()
-                    ddd = np.mean((dic[phase + 'gen_img'] - gen_img.cpu().detach().numpy()) ** 2)
+                    ddd = np.sum((dic[phase + 'gen_img'] - gen_img.cpu().detach().numpy()) ** 2)
                     print('ddd=%.6f' % ddd)
-                    ddd = np.mean((dic[phase + '_gen_ws'] - _gen_ws.cpu().detach().numpy()) ** 2)
+                    ddd = np.sum((dic[phase + '_gen_ws'] - _gen_ws.cpu().detach().numpy()) ** 2)
                     print('ddd=%.6f' % ddd)
                 gen_logits = self.run_D(gen_img, gen_c, sync=False)
                 if save_npz:
                     dic[phase + 'gen_logits'] = gen_logits.cpu().detach().numpy()
                 else:
-                    ddd = np.mean((dic[phase + 'gen_logits'] - gen_logits.cpu().detach().numpy()) ** 2)
+                    ddd = np.sum((dic[phase + 'gen_logits'] - gen_logits.cpu().detach().numpy()) ** 2)
                     print('ddd=%.6f' % ddd)
                 training_stats.report('Loss/scores/fake', gen_logits)
                 training_stats.report('Loss/signs/fake', gen_logits.sign())
@@ -107,9 +107,9 @@ class StyleGAN2Loss(Loss):
                     dic[phase + 'gen_img'] = gen_img.cpu().detach().numpy()
                     dic[phase + 'gen_ws'] = gen_ws.cpu().detach().numpy()
                 else:
-                    ddd = np.mean((dic[phase + 'gen_img'] - gen_img.cpu().detach().numpy()) ** 2)
+                    ddd = np.sum((dic[phase + 'gen_img'] - gen_img.cpu().detach().numpy()) ** 2)
                     print('ddd=%.6f' % ddd)
-                    ddd = np.mean((dic[phase + 'gen_ws'] - gen_ws.cpu().detach().numpy()) ** 2)
+                    ddd = np.sum((dic[phase + 'gen_ws'] - gen_ws.cpu().detach().numpy()) ** 2)
                     print('ddd=%.6f' % ddd)
                 # pl_noise = torch.randn_like(gen_img) / np.sqrt(gen_img.shape[2] * gen_img.shape[3])
                 pl_noise = torch.ones_like(gen_img) / np.sqrt(gen_img.shape[2] * gen_img.shape[3])
@@ -120,9 +120,9 @@ class StyleGAN2Loss(Loss):
                     dic[phase + 'pl_grads'] = pl_grads.cpu().detach().numpy()
                     dic[phase + 'pl_lengths'] = pl_lengths.cpu().detach().numpy()
                 else:
-                    ddd = np.mean((dic[phase + 'pl_grads'] - pl_grads.cpu().detach().numpy()) ** 2)
+                    ddd = np.sum((dic[phase + 'pl_grads'] - pl_grads.cpu().detach().numpy()) ** 2)
                     print('ddd=%.6f' % ddd)
-                    ddd = np.mean((dic[phase + 'pl_lengths'] - pl_lengths.cpu().detach().numpy()) ** 2)
+                    ddd = np.sum((dic[phase + 'pl_lengths'] - pl_lengths.cpu().detach().numpy()) ** 2)
                     print('ddd=%.6f' % ddd)
                 pl_mean = self.pl_mean.lerp(pl_lengths.mean(), self.pl_decay)
                 self.pl_mean.copy_(pl_mean.detach())
@@ -142,15 +142,15 @@ class StyleGAN2Loss(Loss):
                     dic[phase + 'gen_img'] = gen_img.cpu().detach().numpy()
                     dic[phase + '_gen_ws'] = _gen_ws.cpu().detach().numpy()
                 else:
-                    ddd = np.mean((dic[phase + 'gen_img'] - gen_img.cpu().detach().numpy()) ** 2)
+                    ddd = np.sum((dic[phase + 'gen_img'] - gen_img.cpu().detach().numpy()) ** 2)
                     print('ddd=%.6f' % ddd)
-                    ddd = np.mean((dic[phase + '_gen_ws'] - _gen_ws.cpu().detach().numpy()) ** 2)
+                    ddd = np.sum((dic[phase + '_gen_ws'] - _gen_ws.cpu().detach().numpy()) ** 2)
                     print('ddd=%.6f' % ddd)
                 gen_logits = self.run_D(gen_img, gen_c, sync=False) # Gets synced by loss_Dreal.
                 if save_npz:
                     dic[phase + 'gen_logits'] = gen_logits.cpu().detach().numpy()
                 else:
-                    ddd = np.mean((dic[phase + 'gen_logits'] - gen_logits.cpu().detach().numpy()) ** 2)
+                    ddd = np.sum((dic[phase + 'gen_logits'] - gen_logits.cpu().detach().numpy()) ** 2)
                     print('ddd=%.6f' % ddd)
                 training_stats.report('Loss/scores/fake', gen_logits)
                 training_stats.report('Loss/signs/fake', gen_logits.sign())
@@ -168,7 +168,7 @@ class StyleGAN2Loss(Loss):
                 if save_npz:
                     dic[phase + 'real_logits'] = real_logits.cpu().detach().numpy()
                 else:
-                    ddd = np.mean((dic[phase + 'real_logits'] - real_logits.cpu().detach().numpy()) ** 2)
+                    ddd = np.sum((dic[phase + 'real_logits'] - real_logits.cpu().detach().numpy()) ** 2)
                     print('ddd=%.6f' % ddd)
                 training_stats.report('Loss/scores/real', real_logits)
                 training_stats.report('Loss/signs/real', real_logits.sign())
@@ -179,7 +179,7 @@ class StyleGAN2Loss(Loss):
                     if save_npz:
                         dic[phase + 'loss_Dreal'] = loss_Dreal.cpu().detach().numpy()
                     else:
-                        ddd = np.mean((dic[phase + 'loss_Dreal'] - loss_Dreal.cpu().detach().numpy()) ** 2)
+                        ddd = np.sum((dic[phase + 'loss_Dreal'] - loss_Dreal.cpu().detach().numpy()) ** 2)
                         print('ddd=%.6f' % ddd)
                     training_stats.report('Loss/D/loss', loss_Dgen + loss_Dreal)
 
@@ -192,9 +192,9 @@ class StyleGAN2Loss(Loss):
                         dic[phase + 'r1_grads'] = r1_grads.cpu().detach().numpy()
                         dic[phase + 'r1_penalty'] = r1_penalty.cpu().detach().numpy()
                     else:
-                        ddd = np.mean((dic[phase + 'r1_grads'] - r1_grads.cpu().detach().numpy()) ** 2)
+                        ddd = np.sum((dic[phase + 'r1_grads'] - r1_grads.cpu().detach().numpy()) ** 2)
                         print('ddd=%.6f' % ddd)
-                        ddd = np.mean((dic[phase + 'r1_penalty'] - r1_penalty.cpu().detach().numpy()) ** 2)
+                        ddd = np.sum((dic[phase + 'r1_penalty'] - r1_penalty.cpu().detach().numpy()) ** 2)
                         print('ddd=%.6f' % ddd)
                     loss_Dr1 = r1_penalty * (self.r1_gamma / 2)
                     training_stats.report('Loss/r1_penalty', r1_penalty)

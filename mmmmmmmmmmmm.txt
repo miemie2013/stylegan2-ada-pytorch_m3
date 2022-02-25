@@ -23,6 +23,11 @@ batch_size = gen_z.shape[0] // self.pl_batch_shrink
 
 
 梯度对齐：(如果显存不足，借用一下11G的卡)
+发现一个新坑，优化器要换成SGD：
+opt = torch.optim.SGD(module.parameters(), lr=opt_kwargs['lr'], momentum=0.9)
+因为Adam更新参数有一定随机性，同样的情况下，跑2次结果不同！！！
+
+
 python train.py --outdir ./StyleGAN2_ADA_Output --data ../data/data42681/afhq/train/cat --gpus=1 --cfg paper512 --batch 2 --aug noaug --resume afhqcat.pkl
 
 python train.py --outdir ./StyleGAN2_ADA_Output --data ../data/data42681/afhq/train/cat --gpus=1 --cfg paper512 --batch 1 --aug noaug --resume afhqcat.pkl
