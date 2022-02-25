@@ -1,0 +1,70 @@
+
+
+
+
+
+
+先把afhq数据集下载好，解压，再输入下面命令做成压缩包：
+python dataset_tool.py --source=../data/data42681/afhq/train/cat --dest=./datasets/afhqcat.zip
+python dataset_tool.py --source=../data/data42681/afhq/train/dog --dest=./datasets/afhqdog.zip
+python dataset_tool.py --source=../data/data42681/afhq/train/wild --dest=./datasets/afhqwild.zip
+
+
+
+
+训练（以训练afhq的猫为例）：
+对应的预训练模型是：
+wget https://nvlabs-fi-cdn.nvidia.com/stylegan2-ada-pytorch/pretrained/afhqcat.pkl
+
+因为loss.py里有
+batch_size = gen_z.shape[0] // self.pl_batch_shrink
+而且self.pl_batch_shrink = 2
+所以批大小至少为2，避免报错。
+
+
+梯度对齐：(如果显存不足，借用一下11G的卡)
+python train.py --outdir ./StyleGAN2_ADA_Output --data ../data/data42681/afhq/train/cat --gpus=1 --cfg paper512 --batch 2 --aug noaug --resume afhqcat.pkl
+
+
+
+python train.py --outdir ./StyleGAN2_ADA_Output --data ./datasets/afhqcat.zip --gpus=1 --cfg paper512 --batch 2
+
+
+复现论文结果的命令：
+python train.py --outdir ./StyleGAN2_ADA_Output --data ./datasets/afhqcat.zip --gpus=8 --cfg paper512
+
+
+
+python train.py --outdir ./StyleGAN2_ADA_Output --data ../data/data42681/afhq/train/cat --gpus=1 --cfg paper512 --batch 1 --aug noaug --resume afhqcat.pkl
+
+
+
+
+预测：
+python generate.py --outdir=out --trunc=1 --seeds=85,265,297,849 --network=afhqcat.pkl
+
+
+python generate.py --outdir=out --trunc=0.7 --seeds=600-605 --network=afhqcat.pkl
+
+
+# style_mixing
+# python style_mixing.py --outdir=out_style_mixing --rows=85,100,75,458,1500 --cols=55,821,1789,293 --network=afhqcat.pkl
+style_mixing的随机种子在style_mixing.py里面改，不建议使用命令行指定了。
+
+python style_mixing.py --outdir=out_style_mixing --network=afhqcat.pkl
+
+
+
+# 如果对style_mixing的行列感兴趣的话
+python generate.py --outdir=out_row --trunc=1 --seeds=85,100,75,458,1500 --network=afhqcat.pkl
+python generate.py --outdir=out_col --trunc=1 --seeds=55,821,1789,293 --network=afhqcat.pkl
+
+
+
+
+
+
+
+
+
+

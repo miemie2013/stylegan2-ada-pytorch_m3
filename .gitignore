@@ -1,0 +1,11 @@
+__pycache__/
+.cache/
+.idea/
+datasets/
+out/
+out*/
+StyleGAN2_ADA_Output/
+*.pkl
+*.pth
+*.npz
+*.pdparams
