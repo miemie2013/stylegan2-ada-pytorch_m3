@@ -58,6 +58,7 @@ def load_network_pkl(f, force_fp16=False):
                 misc.copy_params_and_buffers(old, new, require_all=True)
                 data[key] = new
     # miemie2013: 调试的代码
+    # torch.save(data['G'].state_dict(), "G_afhqcat.pth")
     # torch.save(data['G_ema'].state_dict(), "G_ema_afhqcat.pth")
     # torch.save(data['D'].state_dict(), "D_afhqcat.pth")
     return data
