@@ -38,8 +38,8 @@ ws = paddle.to_tensor(ws)
 ws.stop_gradient = False
 
 
-y = synthesisLayer(x, ws, dic2, pre_name + '.synthesisLayer', fused_modconv=fused_modconv)
-# y = synthesisLayer(x, ws, fused_modconv=fused_modconv)
+# y = synthesisLayer(x, ws, dic2, pre_name + '.synthesisLayer', fused_modconv=fused_modconv)
+y = synthesisLayer(x, ws, fused_modconv=fused_modconv)
 
 dy_dx = paddle.grad(outputs=[y.sum()], inputs=[x], create_graph=True)[0]
 dy_dws = paddle.grad(outputs=[y.sum()], inputs=[ws], create_graph=True)[0]

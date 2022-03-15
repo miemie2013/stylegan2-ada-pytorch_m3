@@ -742,6 +742,13 @@ class SynthesisLayer(nn.Layer):
         img3 = bias_act(img2, paddle.cast(self.bias, dtype=img2.dtype), act=self.activation, gain=act_gain, clamp=act_clamp)
         return img3
 
+    def get_grad(self, dloss_dy, img3, img2, styles, x, w):
+        dloss_dimg2 = paddle.grad(outputs=[(dloss_dy * img3).sum()], inputs=[img2], create_graph=True)[0]
+        dloss_dx = paddle.grad(outputs=[(dloss_dimg2 * img2).sum()], inputs=[x], create_graph=True)[0]
+        dloss_dstyles = paddle.grad(outputs=[(dloss_dimg2 * img2).sum()], inputs=[styles], create_graph=True)[0]
+        dloss_dw = paddle.grad(outputs=[(dloss_dstyles * styles).sum()], inputs=[w], create_graph=True)[0]
+        return dloss_dx, dloss_dw
+
 
 
 class ToRGBLayer(nn.Layer):
