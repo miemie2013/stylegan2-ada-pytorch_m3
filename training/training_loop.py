@@ -209,9 +209,9 @@ def training_loop(
             opt_kwargs.betas = [beta ** mb_ratio for beta in opt_kwargs.betas]
             # opt = dnnlib.util.construct_class_by_name(module.parameters(), **opt_kwargs) # subclass of torch.optim.Optimizer
             if name == 'G':
-                opt = torch.optim.SGD(module.parameters(), lr=0.00001, momentum=0.9)
+                opt = torch.optim.SGD(module.parameters(), lr=0.001, momentum=0.9)
             elif name == 'D':
-                opt = torch.optim.SGD(module.parameters(), lr=0.00002, momentum=0.9)
+                opt = torch.optim.SGD(module.parameters(), lr=0.002, momentum=0.9)
             phases += [dnnlib.EasyDict(name=name+'main', module=module, opt=opt, interval=1)]
             phases += [dnnlib.EasyDict(name=name+'reg', module=module, opt=opt, interval=reg_interval)]
     for phase in phases:
@@ -269,6 +269,11 @@ def training_loop(
         # save_npz = False   # 为False时表示，读取为True时保存的输入，自己和自己对齐。
         if not save_npz:
             dic = np.load('batch%.5d.npz' % batch_idx)
+        if save_npz:
+            if batch_idx == 0:
+                torch.save(G_ema.state_dict(), "G_ema_00.pth")
+                torch.save(G.state_dict(), "G_00.pth")
+                torch.save(D.state_dict(), "D_00.pth")
 
         # Fetch training data.
         with torch.autograd.profiler.record_function('data_fetch'):
@@ -328,6 +333,7 @@ def training_loop(
             if phase.end_event is not None:
                 phase.end_event.record(torch.cuda.current_stream(device))
 
+
         # Update G_ema.
         with torch.autograd.profiler.record_function('Gema'):
             ema_nimg = ema_kimg * 1000
@@ -338,6 +344,12 @@ def training_loop(
                 p_ema.copy_(p.lerp(p_ema, ema_beta))
             for b_ema, b in zip(G_ema.buffers(), G.buffers()):
                 b_ema.copy_(b)
+
+        if save_npz:
+            if batch_idx == 19:
+                torch.save(G_ema.state_dict(), "G_ema_19.pth")
+                torch.save(G.state_dict(), "G_19.pth")
+                torch.save(D.state_dict(), "D_19.pth")
 
         # Update state.
         cur_nimg += batch_size
