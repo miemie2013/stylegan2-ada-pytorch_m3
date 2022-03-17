@@ -77,6 +77,17 @@ style_mixing的随机种子在style_mixing.py里面改，不建议使用命令�
 python style_mixing.py --outdir=out_style_mixing --network=afhqcat.pkl
 
 
+python style_mixing.py --outdir=out_style_mixing --network=metfaces.pkl
+
+
+# save_pth。保存为.pth模型
+
+python save_pth.py --network=afhqcat.pkl --g_ema_name=G_ema_afhqcat.pth --g_name=G_afhqcat.pth --d_name=D_afhqcat.pth
+
+
+python save_pth.py --network=metfaces.pkl --g_ema_name=G_ema_metfaces.pth --g_name=G_metfaces.pth --d_name=D_metfaces.pth
+
+
 
 # 如果对style_mixing的行列感兴趣的话
 python generate.py --outdir=out_row --trunc=1 --seeds=85,100,75,458,1500 --network=afhqcat.pkl
