@@ -269,6 +269,10 @@ def training_loop(
         # save_npz = False   # 为False时表示，读取为True时保存的输入，自己和自己对齐。
         if not save_npz:
             dic = np.load('batch%.5d.npz' % batch_idx)
+            if batch_idx == 0:
+                G_ema.load_state_dict(torch.load("G_ema_00.pth", map_location="cpu"))
+                G.load_state_dict(torch.load("G_00.pth", map_location="cpu"))
+                D.load_state_dict(torch.load("D_00.pth", map_location="cpu"))
         if save_npz:
             if batch_idx == 0:
                 torch.save(G_ema.state_dict(), "G_ema_00.pth")
