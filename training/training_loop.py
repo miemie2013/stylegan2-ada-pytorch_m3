@@ -319,8 +319,6 @@ def training_loop(
                 loss.accumulate_gradients(phase=phase.name, real_img=real_img, real_c=real_c, gen_z=gen_z, gen_c=gen_c, sync=sync, gain=gain, dic=dic, save_npz=save_npz)
 
             # Update weights.
-            if save_npz:
-                np.savez('batch%.5d'%batch_idx, **dic)
             phase.module.requires_grad_(False)
             with torch.autograd.profiler.record_function(phase.name + '_opt'):
                 # for param in phase.module.parameters():
@@ -337,6 +335,8 @@ def training_loop(
             if phase.end_event is not None:
                 phase.end_event.record(torch.cuda.current_stream(device))
 
+        if save_npz:
+            np.savez('batch%.5d'%batch_idx, **dic)
 
         # Update G_ema.
         with torch.autograd.profiler.record_function('Gema'):
