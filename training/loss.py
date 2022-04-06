@@ -52,7 +52,9 @@ class StyleGAN2Loss(Loss):
 
     def run_D(self, img, c, sync):
         if self.augment_pipe is not None:
-            img = self.augment_pipe(img)
+            # img = self.augment_pipe(img)
+            debug_percentile = 0.7
+            img = self.augment_pipe(img, debug_percentile)
         with misc.ddp_sync(self.D, sync):
             logits = self.D(img, c)
         return logits

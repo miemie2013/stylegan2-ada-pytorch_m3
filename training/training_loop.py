@@ -366,8 +366,9 @@ def training_loop(
             aaaaaaaaaa2 = ada_target
             aaaaaaaaaa3 = aaaaaaaaaa1 - aaaaaaaaaa2
             aaaaaaaaaa4 = np.sign(aaaaaaaaaa3)
-            # print(aaaaaaaaaa1)
-            # print('==========================')
+            print(augment_pipe.p)
+            print(aaaaaaaaaa1)
+            print('==========================')
             adjust = aaaaaaaaaa4 * (batch_size * ada_interval) / (ada_kimg * 1000)
             augment_pipe.p.copy_((augment_pipe.p + adjust).max(misc.constant(0, device=device)))
 
