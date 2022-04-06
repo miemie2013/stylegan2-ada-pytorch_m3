@@ -99,8 +99,17 @@ python generate.py --outdir=out_col --trunc=1 --seeds=55,821,1789,293 --network=
 
 
 
+# 指标
+
+# Previous training run: look up options automatically, save result to JSONL file.
+python calc_metrics.py --metrics=pr50k3_full --network=~/training-runs/00000-ffhq10k-res64-auto1/network-snapshot-000000.pkl
+
+# Pre-trained network pickle: specify dataset explicitly, print result to stdout.
+python calc_metrics.py --metrics=fid50k_full --data=~/datasets/ffhq.zip --mirror=1 --network=https://nvlabs-fi-cdn.nvidia.com/stylegan2-ada-pytorch/pretrained/ffhq.pkl
 
 
+
+python calc_metrics.py --metrics=fid50k_full --data=../data/data42681/afhq/train/cat --network=afhqcat.pkl
 
 
 
