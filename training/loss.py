@@ -36,10 +36,10 @@ class StyleGAN2Loss(Loss):
         self.pl_weight = pl_weight
         self.pl_mean = torch.zeros([], device=device)
 
-    def run_G(self, z, c, sync, dic=None, pre_name=''):
+    def run_G(self, z, c, sync):
         with misc.ddp_sync(self.G_mapping, sync):
             z.requires_grad_(True)
-            ws = self.G_mapping(z, c, dic, pre_name + '_mapping')
+            ws = self.G_mapping(z, c)
             self.style_mixing_prob = -1.0
             if self.style_mixing_prob > 0:
                 with torch.autograd.profiler.record_function('style_mixing'):
@@ -47,7 +47,7 @@ class StyleGAN2Loss(Loss):
                     cutoff = torch.where(torch.rand([], device=ws.device) < self.style_mixing_prob, cutoff, torch.full_like(cutoff, ws.shape[1]))
                     ws[:, cutoff:] = self.G_mapping(torch.randn_like(z), c, skip_w_avg_update=True)[:, cutoff:]
         with misc.ddp_sync(self.G_synthesis, sync):
-            img = self.G_synthesis(ws, dic, pre_name + '_synthesis')
+            img = self.G_synthesis(ws)
         return img, ws
 
     def run_D(self, img, c, sync):
@@ -69,7 +69,7 @@ class StyleGAN2Loss(Loss):
         # Gmain: Maximize logits for generated images.
         if do_Gmain:
             with torch.autograd.profiler.record_function('Gmain_forward'):
-                gen_img, _gen_ws = self.run_G(gen_z, gen_c, sync=(sync and not do_Gpl), dic=None, pre_name=phase) # May get synced by Gpl.
+                gen_img, _gen_ws = self.run_G(gen_z, gen_c, sync=(sync and not do_Gpl)) # May get synced by Gpl.
                 d_gen_ws_dgen_z = torch.autograd.grad(outputs=[_gen_ws.sum()], inputs=[gen_z], create_graph=True, only_inputs=True)[0]
                 if save_npz:
                     dic[phase + 'd_gen_ws_dgen_z'] = d_gen_ws_dgen_z.cpu().detach().numpy()
@@ -104,7 +104,7 @@ class StyleGAN2Loss(Loss):
             with torch.autograd.profiler.record_function('Gpl_forward'):
                 batch_size = gen_z.shape[0] // self.pl_batch_shrink
                 batch_size = max(batch_size, 1)
-                gen_img, gen_ws = self.run_G(gen_z[:batch_size], gen_c[:batch_size], sync=sync, dic=None, pre_name=phase)
+                gen_img, gen_ws = self.run_G(gen_z[:batch_size], gen_c[:batch_size], sync=sync)
                 if save_npz:
                     dic[phase + 'gen_img'] = gen_img.cpu().detach().numpy()
                     dic[phase + 'gen_ws'] = gen_ws.cpu().detach().numpy()
@@ -139,7 +139,7 @@ class StyleGAN2Loss(Loss):
         loss_Dgen = 0
         if do_Dmain:
             with torch.autograd.profiler.record_function('Dgen_forward'):
-                gen_img, _gen_ws = self.run_G(gen_z, gen_c, sync=False, dic=None, pre_name=phase)
+                gen_img, _gen_ws = self.run_G(gen_z, gen_c, sync=False)
                 if save_npz:
                     dic[phase + 'gen_img'] = gen_img.cpu().detach().numpy()
                     dic[phase + '_gen_ws'] = _gen_ws.cpu().detach().numpy()

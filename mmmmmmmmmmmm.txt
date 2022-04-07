@@ -34,7 +34,15 @@ training/training_loop.py
         save_npz = True    # 为True时表示，记录前20步的输入、输出、梯度。
         # save_npz = False   # 为False时表示，读取为True时保存的输入，自己和自己对齐。
 
+CUDA_VISIBLE_DEVICES=0
 python train.py --outdir ./StyleGAN2_ADA_Output --data ../data/data42681/afhq/train/dog_32 --gpus=1 --cfg my32 --batch 6 --aug ada --resume afhqcat.pkl
+
+
+CUDA_VISIBLE_DEVICES=0,1
+python train.py --outdir ./StyleGAN2_ADA_Output --data ../data/data42681/afhq/train/dog_32 --gpus=2 --cfg my32 --batch 8 --aug ada --resume afhqcat.pkl
+
+
+
 
 
 python train.py --outdir ./StyleGAN2_ADA_Output --data ../data/data42681/afhq/train/cat --gpus=1 --cfg paper512 --batch 2 --aug noaug --resume afhqcat.pkl
