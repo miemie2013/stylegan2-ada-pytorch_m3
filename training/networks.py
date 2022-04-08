@@ -111,11 +111,11 @@ class FullyConnectedLayer(torch.nn.Module):
                 b = b * self.bias_gain
 
         if self.activation == 'linear' and b is not None:
-            out = torch.addmm(b.unsqueeze(0), x, w.t())
+            x = torch.addmm(b.unsqueeze(0), x, w.t())
         else:
-            r = x.matmul(w.t())
-            out = bias_act.bias_act(r, b, act=self.activation)
-        return out
+            x = x.matmul(w.t())
+            x = bias_act.bias_act(x, b, act=self.activation)
+        return x
 
 #----------------------------------------------------------------------------
 
@@ -297,14 +297,13 @@ class SynthesisLayer(torch.nn.Module):
             noise = self.noise_const * self.noise_strength
 
         flip_weight = (self.up == 1) # slightly faster
-        x.requires_grad_(True)
-        img2 = modulated_conv2d(x=x, weight=self.weight, styles=styles, noise=noise, up=self.up,
+        x = modulated_conv2d(x=x, weight=self.weight, styles=styles, noise=noise, up=self.up,
             padding=self.padding, resample_filter=self.resample_filter, flip_weight=flip_weight, fused_modconv=fused_modconv)
 
         act_gain = self.act_gain * gain
         act_clamp = self.conv_clamp * gain if self.conv_clamp is not None else None
-        img3 = bias_act.bias_act(img2, self.bias.to(img2.dtype), act=self.activation, gain=act_gain, clamp=act_clamp)
-        return img3
+        x = bias_act.bias_act(x, self.bias.to(x.dtype), act=self.activation, gain=act_gain, clamp=act_clamp)
+        return x
 
 #----------------------------------------------------------------------------
 

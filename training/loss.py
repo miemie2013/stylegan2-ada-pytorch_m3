@@ -38,7 +38,6 @@ class StyleGAN2Loss(Loss):
 
     def run_G(self, z, c, sync):
         with misc.ddp_sync(self.G_mapping, sync):
-            z.requires_grad_(True)
             ws = self.G_mapping(z, c)
             self.style_mixing_prob = -1.0
             if self.style_mixing_prob > 0:
