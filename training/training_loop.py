@@ -205,6 +205,9 @@ def training_loop(
 
     for name, module in [('G_mapping', G.mapping), ('G_synthesis', G.synthesis), ('D', D), (None, G_ema), ('augment_pipe', augment_pipe)]:
         if (num_gpus > 1) and (module is not None) and len(list(module.parameters())) != 0:
+            '''
+            除了augment_pipe，其它4个 G.mapping、G.synthesis、D、G_ema 都是DDP模型。
+            '''
             print(name)
             module.requires_grad_(True)
             module = torch.nn.parallel.DistributedDataParallel(module, device_ids=[device], broadcast_buffers=False, find_unused_parameters=True)
@@ -418,9 +421,9 @@ def training_loop(
         if save_npz:
             if batch_idx == 19 and rank == 0:
                 if num_gpus > 1:
-                    torch.save(G_ema.module.state_dict(), "G_ema_19.pth")
-                    torch.save(G.module.state_dict(), "G_19.pth")
-                    torch.save(D.module.state_dict(), "D_19.pth")
+                    torch.save(G_ema.state_dict(), "G_ema_19.pth")
+                    torch.save(G.state_dict(), "G_19.pth")
+                    torch.save(D.state_dict(), "D_19.pth")
                 else:
                     torch.save(G_ema.state_dict(), "G_ema_19.pth")
                     torch.save(G.state_dict(), "G_19.pth")
