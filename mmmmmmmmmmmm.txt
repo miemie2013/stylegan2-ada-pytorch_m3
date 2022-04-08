@@ -35,7 +35,7 @@ training/training_loop.py
         # save_npz = False   # 为False时表示，读取为True时保存的输入，自己和自己对齐。
 
 CUDA_VISIBLE_DEVICES=0
-python train.py --outdir ./StyleGAN2_ADA_Output --data ../data/data42681/afhq/train/dog_32 --gpus=1 --cfg my32 --batch 6 --aug ada --resume afhqcat.pkl
+python train.py --outdir ./StyleGAN2_ADA_Output --data ../data/data42681/afhq/train/dog_32 --gpus=1 --cfg my32 --batch 8 --aug ada --resume afhqcat.pkl
 
 
 CUDA_VISIBLE_DEVICES=0,1

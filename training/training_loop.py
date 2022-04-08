@@ -186,11 +186,28 @@ def training_loop(
         print(f'Distributing across {num_gpus} GPUs...')
         print(f'DDP models:')
     ddp_modules = dict()
+
+
+    save_npz = True  # 为True时表示，记录前20步的输入、输出、梯度。
+    # save_npz = False  # 为False时表示，读取为True时保存的输入，自己和自己对齐。
+    batch_idx = 0
+    if not save_npz:
+        if batch_idx == 0:
+            G_ema.load_state_dict(torch.load("G_ema_00.pth", map_location="cpu"))
+            G.load_state_dict(torch.load("G_00.pth", map_location="cpu"))
+            D.load_state_dict(torch.load("D_00.pth", map_location="cpu"))
+    if save_npz:
+        if batch_idx == 0 and rank == 0:
+            torch.save(G_ema.state_dict(), "G_ema_00.pth")
+            torch.save(G.state_dict(), "G_00.pth")
+            torch.save(D.state_dict(), "D_00.pth")
+
+
     for name, module in [('G_mapping', G.mapping), ('G_synthesis', G.synthesis), ('D', D), (None, G_ema), ('augment_pipe', augment_pipe)]:
         if (num_gpus > 1) and (module is not None) and len(list(module.parameters())) != 0:
             print(name)
             module.requires_grad_(True)
-            module = torch.nn.parallel.DistributedDataParallel(module, device_ids=[device], broadcast_buffers=False)
+            module = torch.nn.parallel.DistributedDataParallel(module, device_ids=[device], broadcast_buffers=False, find_unused_parameters=True)
             module.requires_grad_(False)
         if name is not None:
             ddp_modules[name] = module
@@ -267,23 +284,24 @@ def training_loop(
     while batch_idx < 20:
         dic = {}
         print('======================== batch%.5d.npz ========================'%batch_idx)
-        save_npz = True    # 为True时表示，记录前20步的输入、输出、梯度。
-        # save_npz = False   # 为False时表示，读取为True时保存的输入，自己和自己对齐。
         if not save_npz:
-            dic = np.load('batch%.5d.npz' % batch_idx)
-            if batch_idx == 0:
-                G_ema.load_state_dict(torch.load("G_ema_00.pth", map_location="cpu"))
-                G.load_state_dict(torch.load("G_00.pth", map_location="cpu"))
-                D.load_state_dict(torch.load("D_00.pth", map_location="cpu"))
-        if save_npz:
-            if batch_idx == 0:
-                torch.save(G_ema.state_dict(), "G_ema_00.pth")
-                torch.save(G.state_dict(), "G_00.pth")
-                torch.save(D.state_dict(), "D_00.pth")
+            dic = np.load('batch%.5d_rank%.2d.npz' % (batch_idx, rank))
 
         # Fetch training data.
         with torch.autograd.profiler.record_function('data_fetch'):
             phase_real_img, phase_real_c = next(training_set_iterator)
+            if batch_idx == 0:
+                '''
+                假如训练命令的命令行参数是 --gpus=2 --batch 8 --cfg my32
+                即总的批大小是8，每卡批大小是4，那么这里
+                phase_real_img.shape = [4, 3, 32, 32]
+                phase_real_c.shape   = [4, 0]
+                batch_gpu            = 4
+                即拿到的phase_real_img和phase_real_c是一张卡（一个进程）上的训练样本，（每张卡）批大小是4
+                '''
+                print('phase_real_img.shape =', phase_real_img.shape)
+                print('phase_real_c.shape =', phase_real_c.shape)
+                print('batch_gpu =', batch_gpu)
             if save_npz:
                 dic['phase_real_img'] = phase_real_img.cpu().detach().numpy()
             else:
@@ -292,13 +310,45 @@ def training_loop(
 
             phase_real_img = (phase_real_img.to(device).to(torch.float32) / 127.5 - 1).split(batch_gpu)
             phase_real_c = phase_real_c.to(device).split(batch_gpu)
+            if batch_idx == 0:
+                '''
+                phase_real_c.split(batch_gpu)的意思是，
+                把 phase_real_c 分成 phase_real_c.shape[0] // batch_gpu 份， 每一份的大小是 batch_gpu。
+                
+                我不太明白这个split()的意义？不管单卡还是多卡训练，len(phase_real_img)始终是1，len(phase_real_c)始终是1
+                '''
+                print('len(phase_real_img) =', len(phase_real_img))
+                print('phase_real_img[0].shape =', phase_real_img[0].shape)
+                print('len(phase_real_c) =', len(phase_real_c))
+                print('phase_real_c[0].shape =', phase_real_c[0].shape)
             all_gen_z = torch.randn([len(phases) * batch_size, G.z_dim], device=device)
+            if batch_idx == 0:
+                '''
+                假如训练命令的命令行参数是 --gpus=2 --batch 8 --cfg my32
+                all_gen_z.shape = [4*8, 512]
+                '''
+                print('all_gen_z.shape =', all_gen_z.shape)
             if save_npz:
                 dic['all_gen_z'] = all_gen_z.cpu().detach().numpy()
             else:
                 bbbbbbbbb = dic['all_gen_z']
                 all_gen_z = torch.Tensor(bbbbbbbbb).cuda().to(torch.float32)
             all_gen_z = [phase_gen_z.split(batch_gpu) for phase_gen_z in all_gen_z.split(batch_size)]
+            if batch_idx == 0:
+                '''
+                all_gen_z.split(batch_size)的意思是，
+                把 all_gen_z 分成 all_gen_z.shape[0] // batch_size 份， 每一份的大小是 batch_size。这里份数即 阶段phases 数4.
+                
+                phase_gen_z.split(batch_gpu)的意思是，
+                把 phase_gen_z 分成 phase_gen_z.shape[0] // batch_gpu 份， 每一份的大小是 batch_gpu。这里份数即 显卡 数2.
+                
+                len(all_gen_z)        = 4
+                len(all_gen_z[0])     = 2
+                all_gen_z[0][0].shape = [4, 512]
+                '''
+                print('len(all_gen_z) =', len(all_gen_z))
+                print('len(all_gen_z[0]) =', len(all_gen_z[0]))
+                print('all_gen_z[0][0].shape =', all_gen_z[0][0].shape)
             all_gen_c = [training_set.get_label(np.random.randint(len(training_set))) for _ in range(len(phases) * batch_size)]
             all_gen_c = torch.from_numpy(np.stack(all_gen_c)).pin_memory().to(device)
             all_gen_c = [phase_gen_c.split(batch_gpu) for phase_gen_c in all_gen_c.split(batch_size)]
@@ -315,8 +365,22 @@ def training_loop(
             phase.module.requires_grad_(True)
 
             # Accumulate gradients over multiple rounds.
+            if batch_idx == 0:
+                print('Accumulate gradients ...')
             for round_idx, (real_img, real_c, gen_z, gen_c) in enumerate(zip(phase_real_img, phase_real_c, phase_gen_z, phase_gen_c)):
                 sync = (round_idx == batch_size // (batch_gpu * num_gpus) - 1)
+                # if batch_idx > -1:
+                if batch_idx == 0:
+                    '''
+                    破案了，不管单卡还是多卡训练，这个for round_idx ...循环只会循环1次，round_idx始终是0，sync始终是True。
+                    假如训练命令的命令行参数是 --gpus=2 --batch 8 --cfg my32
+                    
+                    则len(phase_gen_z) == len(all_gen_z[0]) == 显卡数量 == 2
+                    但是len(phase_real_img) == 1，len(phase_real_c) == 1，
+                    即phase_gen_z中有 {显卡数量 - 1} 个噪声被浪费掉。
+                    '''
+                    print('round_idx =', round_idx)
+                    print('sync =', sync)
                 gain = phase.interval
                 loss.accumulate_gradients(phase=phase.name, real_img=real_img, real_c=real_c, gen_z=gen_z, gen_c=gen_c, sync=sync, gain=gain, dic=dic, save_npz=save_npz)
 
@@ -338,7 +402,7 @@ def training_loop(
                 phase.end_event.record(torch.cuda.current_stream(device))
 
         if save_npz:
-            np.savez('batch%.5d'%batch_idx, **dic)
+            np.savez('batch%.5d_rank%.2d'%(batch_idx, rank), **dic)
 
         # Update G_ema.
         with torch.autograd.profiler.record_function('Gema'):
@@ -352,10 +416,15 @@ def training_loop(
                 b_ema.copy_(b)
 
         if save_npz:
-            if batch_idx == 19:
-                torch.save(G_ema.state_dict(), "G_ema_19.pth")
-                torch.save(G.state_dict(), "G_19.pth")
-                torch.save(D.state_dict(), "D_19.pth")
+            if batch_idx == 19 and rank == 0:
+                if num_gpus > 1:
+                    torch.save(G_ema.module.state_dict(), "G_ema_19.pth")
+                    torch.save(G.module.state_dict(), "G_19.pth")
+                    torch.save(D.module.state_dict(), "D_19.pth")
+                else:
+                    torch.save(G_ema.state_dict(), "G_ema_19.pth")
+                    torch.save(G.state_dict(), "G_19.pth")
+                    torch.save(D.state_dict(), "D_19.pth")
 
         # Update state.
         cur_nimg += batch_size
