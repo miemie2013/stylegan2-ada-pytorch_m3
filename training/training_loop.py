@@ -380,7 +380,7 @@ def training_loop(
                     
                     则len(phase_gen_z) == len(all_gen_z[0]) == 显卡数量 == 2
                     但是len(phase_real_img) == 1，len(phase_real_c) == 1，
-                    即phase_gen_z中有 {显卡数量 - 1} 个噪声被浪费掉。
+                    即phase_gen_z中有 {显卡数量 - 1} 个噪声被浪费掉。（但是单卡模式时，不会有噪声被浪费，可能这样写是为了兼容单卡模式）
                     '''
                     print('round_idx =', round_idx)
                     print('sync =', sync)

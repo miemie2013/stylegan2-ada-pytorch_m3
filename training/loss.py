@@ -37,6 +37,10 @@ class StyleGAN2Loss(Loss):
         self.pl_mean = torch.zeros([], device=device)
 
     def run_G(self, z, c, sync):
+        '''
+        除了self.augment_pipe，其它3个 self.G_mapping、self.G_synthesis、self.D 都是DDP模型。
+        只有DDP模型才能使用with module.no_sync():
+        '''
         with misc.ddp_sync(self.G_mapping, sync):
             ws = self.G_mapping(z, c)
             self.style_mixing_prob = -1.0
@@ -50,6 +54,10 @@ class StyleGAN2Loss(Loss):
         return img, ws
 
     def run_D(self, img, c, sync):
+        '''
+        除了self.augment_pipe，其它3个 self.G_mapping、self.G_synthesis、self.D 都是DDP模型。
+        只有DDP模型才能使用with module.no_sync():
+        '''
         if self.augment_pipe is not None:
             # img = self.augment_pipe(img)
             debug_percentile = 0.7
@@ -65,8 +73,21 @@ class StyleGAN2Loss(Loss):
         do_Gpl   = (phase in ['Greg', 'Gboth']) and (self.pl_weight != 0)
         do_Dr1   = (phase in ['Dreg', 'Dboth']) and (self.r1_gamma != 0)
 
+        '''
+        多卡训练时，传进来的sync都是True。
+        run_G()和run_D()中，都有
+        with misc.ddp_sync(module, sync):
+        这句的意思是：如果是单卡模式，什么都不做；
+                    如果是多卡模式，且sync==False时，等于
+        with module.no_sync():
+        这用于DDP模型中的梯度累加，DDP模型训练时，每一次优化器step()之前，可能有K次loss.backward()，
+        那么，前K-1次loss.backward()应该使用with module.no_sync():使得梯度可以累加，最后1次loss.backward()。
+        '''
+
         # Gmain: Maximize logits for generated images.
         if do_Gmain:
+            # 训练生成器，判别器应该冻结，而且希望fake_img的gen_logits越大越好（愚弄D，使其判断是真图片），所以损失是-log(sigmoid(gen_logits))
+            # 每个step都做1次
             with torch.autograd.profiler.record_function('Gmain_forward'):
                 gen_img, _gen_ws = self.run_G(gen_z, gen_c, sync=(sync and not do_Gpl)) # May get synced by Gpl.
                 if save_npz:
@@ -92,6 +113,8 @@ class StyleGAN2Loss(Loss):
 
         # Gpl: Apply path length regularization.
         if do_Gpl:
+            # 训练生成器，判别器应该冻结（其实也没有跑判别器），是生成器的梯度惩罚损失（一种高级一点的梯度裁剪）
+            # 每4个step做1次
             with torch.autograd.profiler.record_function('Gpl_forward'):
                 batch_size = gen_z.shape[0] // self.pl_batch_shrink
                 batch_size = max(batch_size, 1)
@@ -129,6 +152,8 @@ class StyleGAN2Loss(Loss):
         # Dmain: Minimize logits for generated images.
         loss_Dgen = 0
         if do_Dmain:
+            # 训练判别器，生成器应该冻结，而且希望fake_img的gen_logits越小越好（判断是假图片），所以损失是-log(1 - sigmoid(gen_logits))
+            # 每个step都做1次
             with torch.autograd.profiler.record_function('Dgen_forward'):
                 gen_img, _gen_ws = self.run_G(gen_z, gen_c, sync=False)
                 if save_npz:
@@ -168,6 +193,8 @@ class StyleGAN2Loss(Loss):
 
                 loss_Dreal = 0
                 if do_Dmain:
+                    # 训练判别器，生成器应该冻结，而且希望real_img的gen_logits越大越好（判断是真图片），所以损失是-log(sigmoid(real_logits))
+                    # 每个step都做1次
                     loss_Dreal = torch.nn.functional.softplus(-real_logits) # -log(sigmoid(real_logits))
                     if save_npz:
                         dic[phase + 'loss_Dreal'] = loss_Dreal.cpu().detach().numpy()
@@ -178,6 +205,8 @@ class StyleGAN2Loss(Loss):
 
                 loss_Dr1 = 0
                 if do_Dr1:
+                    # 训练判别器，生成器应该冻结（其实也没有跑判别器），是判别器的梯度惩罚损失（一种高级一点的梯度裁剪）
+                    # 每16个step做1次
                     with torch.autograd.profiler.record_function('r1_grads'), conv2d_gradfix.no_weight_gradients():
                         r1_grads = torch.autograd.grad(outputs=[real_logits.sum()], inputs=[real_img_tmp], create_graph=True, only_inputs=True)[0]
                     r1_penalty = r1_grads.square().sum([1,2,3])

@@ -34,6 +34,15 @@ training/training_loop.py
         save_npz = True    # 为True时表示，记录前20步的输入、输出、梯度。
         # save_npz = False   # 为False时表示，读取为True时保存的输入，自己和自己对齐。
 
+
+
+第三方实现stylegan2-ada时，不要忘记创建G和D的实例时，都需要设置其的requires_grad_(False)
+    G = dnnlib.util.construct_class_by_name(**G_kwargs, **common_kwargs).train().requires_grad_(False).to(device) # subclass of torch.nn.Module
+    D = dnnlib.util.construct_class_by_name(**D_kwargs, **common_kwargs).train().requires_grad_(False).to(device) # subclass of torch.nn.Module
+因为第0步训练Gmain阶段时，D的权重应该不允许得到梯度。
+而且，除了augment_pipe，其它4个 G.mapping、G.synthesis、D、G_ema 都是DDP模型。
+
+
 CUDA_VISIBLE_DEVICES=0
 python train.py --outdir ./StyleGAN2_ADA_Output --data ../data/data42681/afhq/train/dog_32 --gpus=1 --cfg my32 --batch 8 --aug ada --resume afhqcat.pkl
 
