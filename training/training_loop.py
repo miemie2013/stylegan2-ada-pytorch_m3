@@ -405,7 +405,12 @@ def training_loop(
                 phase.end_event.record(torch.cuda.current_stream(device))
 
         if save_npz:
-            np.savez('batch%.5d_rank%.2d'%(batch_idx, rank), **dic)
+            save_npz_name = 'batch%.5d_rank%.2d'%(batch_idx, rank)
+            dic['w_avg'] = G.mapping.w_avg.cpu().detach().numpy()
+        else:
+            ddd = np.sum((dic['w_avg'] - G.mapping.w_avg.cpu().detach().numpy()) ** 2)
+            print('w_avg ddd=%.6f' % ddd)
+
 
         # Update G_ema.
         with torch.autograd.profiler.record_function('Gema'):
@@ -440,11 +445,19 @@ def training_loop(
             aaaaaaaaaa2 = ada_target
             aaaaaaaaaa3 = aaaaaaaaaa1 - aaaaaaaaaa2
             aaaaaaaaaa4 = np.sign(aaaaaaaaaa3)
-            print(augment_pipe.p)
-            print(aaaaaaaaaa1)
-            print('==========================')
+            if save_npz:
+                dic['augment_pipe_p'] = augment_pipe.p.cpu().detach().numpy()
+                dic['aaaaaaaaaa1'] = np.array(aaaaaaaaaa1)
+            else:
+                ddd = np.sum((dic['augment_pipe_p'] - augment_pipe.p.cpu().detach().numpy()) ** 2)
+                print('augment_pipe_p ddd=%.6f' % ddd)
+                ddd = np.sum((dic['aaaaaaaaaa1'] - np.array(aaaaaaaaaa1)) ** 2)
+                print('aaaaaaaaaa1 ddd=%.6f' % ddd)
             adjust = aaaaaaaaaa4 * (batch_size * ada_interval) / (ada_kimg * 1000)
             augment_pipe.p.copy_((augment_pipe.p + adjust).max(misc.constant(0, device=device)))
+
+        if save_npz:
+            np.savez(save_npz_name, **dic)
 
         # Perform maintenance tasks once per tick.
         done = (cur_nimg >= total_kimg * 1000)
