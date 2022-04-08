@@ -43,12 +43,19 @@ training/training_loop.py
 而且，除了augment_pipe，其它4个 G.mapping、G.synthesis、D、G_ema 都是DDP模型。
 
 
+save_npz = True   # 为True时表示，记录前20步的输入、输出、梯度。
+save_npz = False  # 为False时表示，读取为True时保存的输入，自己和自己对齐。
+
 CUDA_VISIBLE_DEVICES=0
-python train.py --outdir ./StyleGAN2_ADA_Output --data ../data/data42681/afhq/train/dog_32 --gpus=1 --cfg my32 --batch 8 --aug ada --resume afhqcat.pkl
+python train.py --outdir ./StyleGAN2_ADA_Output --data ../data/data42681/afhq/train/dog_32 --gpus=1 --cfg my32 --batch 8 --aug ada --resume afhqcat.pkl --save_npz 1
+
+python train.py --outdir ./StyleGAN2_ADA_Output --data ../data/data42681/afhq/train/dog_32 --gpus=1 --cfg my32 --batch 8 --aug ada --resume afhqcat.pkl --save_npz 0
 
 
 CUDA_VISIBLE_DEVICES=0,1
-python train.py --outdir ./StyleGAN2_ADA_Output --data ../data/data42681/afhq/train/dog_32 --gpus=2 --cfg my32 --batch 8 --aug ada --resume afhqcat.pkl
+python train.py --outdir ./StyleGAN2_ADA_Output --data ../data/data42681/afhq/train/dog_32 --gpus=2 --cfg my32 --batch 8 --aug ada --resume afhqcat.pkl --save_npz 1
+
+python train.py --outdir ./StyleGAN2_ADA_Output --data ../data/data42681/afhq/train/dog_32 --gpus=2 --cfg my32 --batch 8 --aug ada --resume afhqcat.pkl --save_npz 0
 
 
 

@@ -57,6 +57,7 @@ def setup_training_loop_kwargs(
     # Transfer learning.
     resume     = None, # Load previous network: 'noresume' (default), 'ffhq256', 'ffhq512', 'ffhq1024', 'celebahq256', 'lsundog256', <file>, <url>
     freezed    = None, # Freeze-D: <int>, default = 0 discriminator layers
+    save_npz   = None, #
 
     # Performance options (not included in desc).
     fp32       = None, # Disable mixed-precision training: <bool>, default = False
@@ -243,6 +244,11 @@ def setup_training_loop_kwargs(
     else:
         raise UserError(f'--aug={aug} not supported')
 
+    if save_npz:
+        args.save_npz = True
+    else:
+        args.save_npz = False
+
     if p is not None:
         assert isinstance(p, float)
         if aug != 'fixed':
@@ -428,6 +434,7 @@ class CommaSeparatedList(click.ParamType):
 # Transfer learning.
 @click.option('--resume', help='Resume training [default: noresume]', metavar='PKL')
 @click.option('--freezed', help='Freeze-D [default: 0 layers]', type=int, metavar='INT')
+@click.option('--save_npz', help='save_npz [default: true]', type=bool, metavar='BOOL')
 
 # Performance options.
 @click.option('--fp32', help='Disable mixed-precision training', type=bool, metavar='BOOL')
