@@ -110,19 +110,21 @@ class StyleGAN2Loss(Loss):
                 training_stats.report('Loss/G/loss', loss_Gmain)
             with torch.autograd.profiler.record_function('Gmain_backward'):
                 loss_Gmain.mean().mul(gain).backward()
-                m_w_grad = self.G_mapping.fc7.weight.grad
-                m_b_grad = self.G_mapping.fc7.bias.grad
-                s_w_grad = self.G_synthesis.b32.conv0.affine.weight.grad
-                s_b_grad = self.G_synthesis.b32.conv0.affine.bias.grad
-                d_w_grad = self.D.b32.conv0.weight.grad
-                d_b_grad = self.D.b32.conv0.bias.grad
-                # assert d_w_grad is None
-                # assert d_b_grad is None
+                # m_w_grad = self.G_mapping.fc7.weight.grad
+                # m_b_grad = self.G_mapping.fc7.bias.grad
+                # s_w_grad = self.G_synthesis.b32.conv0.affine.weight.grad
+                # s_b_grad = self.G_synthesis.b32.conv0.affine.bias.grad
+                # d_w_grad = self.D.b32.conv0.weight.grad
+                # d_b_grad = self.D.b32.conv0.bias.grad
                 # if save_npz:
                 #     dic[phase + ' m_w_grad'] = m_w_grad.cpu().detach().numpy()
                 #     dic[phase + ' m_b_grad'] = m_b_grad.cpu().detach().numpy()
                 #     dic[phase + ' s_w_grad'] = s_w_grad.cpu().detach().numpy()
                 #     dic[phase + ' s_b_grad'] = s_b_grad.cpu().detach().numpy()
+                #     if d_w_grad is not None:
+                #         dic[phase + ' d_w_grad'] = d_w_grad.cpu().detach().numpy()
+                #     if d_b_grad is not None:
+                #         dic[phase + ' d_b_grad'] = d_b_grad.cpu().detach().numpy()
                 # else:
                 #     kkk = phase + ' m_w_grad'; ddd = np.sum((dic[kkk] - m_w_grad.cpu().detach().numpy()) ** 2)
                 #     print('diff=%.6f (%s)' % (ddd, kkk))
@@ -132,7 +134,12 @@ class StyleGAN2Loss(Loss):
                 #     print('diff=%.6f (%s)' % (ddd, kkk))
                 #     kkk = phase + ' s_b_grad'; ddd = np.sum((dic[kkk] - s_b_grad.cpu().detach().numpy()) ** 2)
                 #     print('diff=%.6f (%s)' % (ddd, kkk))
-                # print()
+                #     if d_w_grad is not None:
+                #         kkk = phase + ' d_w_grad'; ddd = np.sum((dic[kkk] - d_w_grad.cpu().detach().numpy()) ** 2)
+                #         print('diff=%.6f (%s)' % (ddd, kkk))
+                #     if d_b_grad is not None:
+                #         kkk = phase + ' d_b_grad'; ddd = np.sum((dic[kkk] - d_b_grad.cpu().detach().numpy()) ** 2)
+                #         print('diff=%.6f (%s)' % (ddd, kkk))
 
         # Gpl: Apply path length regularization.
         if do_Gpl:
@@ -157,11 +164,8 @@ class StyleGAN2Loss(Loss):
                 pl_lengths = pl_grads.square().sum(2).mean(1).sqrt()
                 if save_npz:
                     dic[phase + ' pl_grads'] = pl_grads.cpu().detach().numpy()
-                    dic[phase + ' pl_lengths'] = pl_lengths.cpu().detach().numpy()
                 else:
-                    kkk = phase + 'pl_grads'; ddd = np.sum((dic[kkk] - pl_grads.cpu().detach().numpy()) ** 2)
-                    print('diff=%.6f (%s)' % (ddd, kkk))
-                    kkk = phase + 'pl_lengths'; ddd = np.sum((dic[kkk] - pl_lengths.cpu().detach().numpy()) ** 2)
+                    kkk = phase + ' pl_grads'; ddd = np.sum((dic[kkk] - pl_grads.cpu().detach().numpy()) ** 2)
                     print('diff=%.6f (%s)' % (ddd, kkk))
                 pl_mean = self.pl_mean.lerp(pl_lengths.mean(), self.pl_decay)
                 self.pl_mean.copy_(pl_mean.detach())
