@@ -107,6 +107,9 @@ def training_loop(
     D_reg_interval          = 16,       # How often to perform regularization for D? None = disable lazy regularization.
     augment_p               = 0,        # Initial value of augmentation probability.
     save_npz                = 1,        #
+    dist_url                = None,     #
+    num_machines            = 1,        #
+    machine_rank            = 0,        #
     ada_target              = None,     # ADA target value. None = fixed p.
     ada_interval            = 4,        # How often to perform ADA adjustment?
     ada_kimg                = 500,      # ADA adjustment speed, measured in how many kimg it takes for p to increase/decrease by one unit.

@@ -58,6 +58,9 @@ def setup_training_loop_kwargs(
     resume     = None, # Load previous network: 'noresume' (default), 'ffhq256', 'ffhq512', 'ffhq1024', 'celebahq256', 'lsundog256', <file>, <url>
     freezed    = None, # Freeze-D: <int>, default = 0 discriminator layers
     save_npz   = None, #
+    dist_url   = None, #
+    num_machines   = None, #
+    machine_rank   = None, #
 
     # Performance options (not included in desc).
     fp32       = None, # Disable mixed-precision training: <bool>, default = False
@@ -249,6 +252,15 @@ def setup_training_loop_kwargs(
     else:
         args.save_npz = False
 
+    if dist_url:
+        print('dist_url is not None')
+        args.dist_url = dist_url
+    else:
+        print('dist_url is None')
+        args.dist_url = None
+    args.num_machines = num_machines
+    args.machine_rank = machine_rank
+
     if p is not None:
         assert isinstance(p, float)
         if aug != 'fixed':
@@ -435,6 +447,9 @@ class CommaSeparatedList(click.ParamType):
 @click.option('--resume', help='Resume training [default: noresume]', metavar='PKL')
 @click.option('--freezed', help='Freeze-D [default: 0 layers]', type=int, metavar='INT')
 @click.option('--save_npz', help='save_npz [default: true]', type=bool, metavar='BOOL')
+@click.option('--dist_url', help='', type=str)
+@click.option('--num_machines', help='', type=int)
+@click.option('--machine_rank', help='', type=int)
 
 # Performance options.
 @click.option('--fp32', help='Disable mixed-precision training', type=bool, metavar='BOOL')
@@ -506,19 +521,19 @@ def main(ctx, outdir, dry_run, **config_kwargs):
     assert not os.path.exists(args.run_dir)
 
     # Print options.
-    print()
-    print('Training options:')
-    print(json.dumps(args, indent=2))
-    print()
-    print(f'Output directory:   {args.run_dir}')
-    print(f'Training data:      {args.training_set_kwargs.path}')
-    print(f'Training duration:  {args.total_kimg} kimg')
-    print(f'Number of GPUs:     {args.num_gpus}')
-    print(f'Number of images:   {args.training_set_kwargs.max_size}')
-    print(f'Image resolution:   {args.training_set_kwargs.resolution}')
-    print(f'Conditional model:  {args.training_set_kwargs.use_labels}')
-    print(f'Dataset x-flips:    {args.training_set_kwargs.xflip}')
-    print()
+    # print()
+    # print('Training options:')
+    # print(json.dumps(args, indent=2))
+    # print()
+    # print(f'Output directory:   {args.run_dir}')
+    # print(f'Training data:      {args.training_set_kwargs.path}')
+    # print(f'Training duration:  {args.total_kimg} kimg')
+    # print(f'Number of GPUs:     {args.num_gpus}')
+    # print(f'Number of images:   {args.training_set_kwargs.max_size}')
+    # print(f'Image resolution:   {args.training_set_kwargs.resolution}')
+    # print(f'Conditional model:  {args.training_set_kwargs.use_labels}')
+    # print(f'Dataset x-flips:    {args.training_set_kwargs.xflip}')
+    # print()
 
     # Dry run?
     if dry_run:
