@@ -23,11 +23,13 @@ class Loss:
 
 
 def save_tensor(dic, key, tensor):
-    dic[key] = tensor.cpu().detach().numpy()
+    if tensor is not None:  # 有的梯度张量可能是None
+        dic[key] = tensor.cpu().detach().numpy()
 
 def print_diff(dic, key, tensor):
-    ddd = np.sum((dic[key] - tensor.cpu().detach().numpy()) ** 2)
-    print('diff=%.6f (%s)' % (ddd, key))
+    if tensor is not None:  # 有的梯度张量可能是None
+        ddd = np.sum((dic[key] - tensor.cpu().detach().numpy()) ** 2)
+        print('diff=%.6f (%s)' % (ddd, key))
 
 
 class StyleGAN2Loss(Loss):
@@ -127,19 +129,15 @@ class StyleGAN2Loss(Loss):
                     save_tensor(dic, phase + ' m_b_grad', m_b_grad)
                     save_tensor(dic, phase + ' s_w_grad', s_w_grad)
                     save_tensor(dic, phase + ' s_b_grad', s_b_grad)
-                    if d_w_grad is not None:
-                        save_tensor(dic, phase + ' d_w_grad', d_w_grad)
-                    if d_b_grad is not None:
-                        save_tensor(dic, phase + ' d_b_grad', d_b_grad)
+                    save_tensor(dic, phase + ' d_w_grad', d_w_grad)
+                    save_tensor(dic, phase + ' d_b_grad', d_b_grad)
                 else:
                     print_diff(dic, phase + ' m_w_grad', m_w_grad)
                     print_diff(dic, phase + ' m_b_grad', m_b_grad)
                     print_diff(dic, phase + ' s_w_grad', s_w_grad)
                     print_diff(dic, phase + ' s_b_grad', s_b_grad)
-                    if d_w_grad is not None:
-                        print_diff(dic, phase + ' d_w_grad', d_w_grad)
-                    if d_b_grad is not None:
-                        print_diff(dic, phase + ' d_b_grad', d_b_grad)
+                    print_diff(dic, phase + ' d_w_grad', d_w_grad)
+                    print_diff(dic, phase + ' d_b_grad', d_b_grad)
 
         # Gpl: Apply path length regularization.
         if do_Gpl:
@@ -172,6 +170,26 @@ class StyleGAN2Loss(Loss):
                 training_stats.report('Loss/G/reg', loss_Gpl)
             with torch.autograd.profiler.record_function('Gpl_backward'):
                 (gen_img[:, 0, 0, 0] * 0 + loss_Gpl).mean().mul(gain).backward()
+                m_w_grad = self.G_mapping.fc7.weight.grad
+                m_b_grad = self.G_mapping.fc7.bias.grad
+                s_w_grad = self.G_synthesis.b32.conv0.affine.weight.grad
+                s_b_grad = self.G_synthesis.b32.conv0.affine.bias.grad
+                d_w_grad = self.D.b32.conv0.weight.grad
+                d_b_grad = self.D.b32.conv0.bias.grad
+                if save_npz:
+                    save_tensor(dic, phase + ' m_w_grad', m_w_grad)
+                    save_tensor(dic, phase + ' m_b_grad', m_b_grad)
+                    save_tensor(dic, phase + ' s_w_grad', s_w_grad)
+                    save_tensor(dic, phase + ' s_b_grad', s_b_grad)
+                    save_tensor(dic, phase + ' d_w_grad', d_w_grad)
+                    save_tensor(dic, phase + ' d_b_grad', d_b_grad)
+                else:
+                    print_diff(dic, phase + ' m_w_grad', m_w_grad)
+                    print_diff(dic, phase + ' m_b_grad', m_b_grad)
+                    print_diff(dic, phase + ' s_w_grad', s_w_grad)
+                    print_diff(dic, phase + ' s_b_grad', s_b_grad)
+                    print_diff(dic, phase + ' d_w_grad', d_w_grad)
+                    print_diff(dic, phase + ' d_b_grad', d_b_grad)
 
         # Dmain: Minimize logits for generated images.
         loss_Dgen = 0
@@ -196,6 +214,26 @@ class StyleGAN2Loss(Loss):
                 loss_Dgen = torch.nn.functional.softplus(gen_logits) # -log(1 - sigmoid(gen_logits))
             with torch.autograd.profiler.record_function('Dgen_backward'):
                 loss_Dgen.mean().mul(gain).backward()
+                m_w_grad = self.G_mapping.fc7.weight.grad
+                m_b_grad = self.G_mapping.fc7.bias.grad
+                s_w_grad = self.G_synthesis.b32.conv0.affine.weight.grad
+                s_b_grad = self.G_synthesis.b32.conv0.affine.bias.grad
+                d_w_grad = self.D.b32.conv0.weight.grad
+                d_b_grad = self.D.b32.conv0.bias.grad
+                if save_npz:
+                    save_tensor(dic, phase + ' backward0 m_w_grad', m_w_grad)
+                    save_tensor(dic, phase + ' backward0 m_b_grad', m_b_grad)
+                    save_tensor(dic, phase + ' backward0 s_w_grad', s_w_grad)
+                    save_tensor(dic, phase + ' backward0 s_b_grad', s_b_grad)
+                    save_tensor(dic, phase + ' backward0 d_w_grad', d_w_grad)
+                    save_tensor(dic, phase + ' backward0 d_b_grad', d_b_grad)
+                else:
+                    print_diff(dic, phase + ' backward0 m_w_grad', m_w_grad)
+                    print_diff(dic, phase + ' backward0 m_b_grad', m_b_grad)
+                    print_diff(dic, phase + ' backward0 s_w_grad', s_w_grad)
+                    print_diff(dic, phase + ' backward0 s_b_grad', s_b_grad)
+                    print_diff(dic, phase + ' backward0 d_w_grad', d_w_grad)
+                    print_diff(dic, phase + ' backward0 d_b_grad', d_b_grad)
 
         # Dmain: Maximize logits for real images.
         # Dr1: Apply R1 regularization.
@@ -239,5 +277,41 @@ class StyleGAN2Loss(Loss):
 
             with torch.autograd.profiler.record_function(name + '_backward'):
                 (real_logits * 0 + loss_Dreal + loss_Dr1).mean().mul(gain).backward()
+                m_w_grad = self.G_mapping.fc7.weight.grad
+                m_b_grad = self.G_mapping.fc7.bias.grad
+                s_w_grad = self.G_synthesis.b32.conv0.affine.weight.grad
+                s_b_grad = self.G_synthesis.b32.conv0.affine.bias.grad
+                d_w_grad = self.D.b32.conv0.weight.grad
+                d_b_grad = self.D.b32.conv0.bias.grad
+                if do_Dmain:
+                    if save_npz:
+                        save_tensor(dic, phase + ' backward1 m_w_grad', m_w_grad)
+                        save_tensor(dic, phase + ' backward1 m_b_grad', m_b_grad)
+                        save_tensor(dic, phase + ' backward1 s_w_grad', s_w_grad)
+                        save_tensor(dic, phase + ' backward1 s_b_grad', s_b_grad)
+                        save_tensor(dic, phase + ' backward1 d_w_grad', d_w_grad)
+                        save_tensor(dic, phase + ' backward1 d_b_grad', d_b_grad)
+                    else:
+                        print_diff(dic, phase + ' backward1 m_w_grad', m_w_grad)
+                        print_diff(dic, phase + ' backward1 m_b_grad', m_b_grad)
+                        print_diff(dic, phase + ' backward1 s_w_grad', s_w_grad)
+                        print_diff(dic, phase + ' backward1 s_b_grad', s_b_grad)
+                        print_diff(dic, phase + ' backward1 d_w_grad', d_w_grad)
+                        print_diff(dic, phase + ' backward1 d_b_grad', d_b_grad)
+                if do_Dr1:
+                    if save_npz:
+                        save_tensor(dic, phase + ' m_w_grad', m_w_grad)
+                        save_tensor(dic, phase + ' m_b_grad', m_b_grad)
+                        save_tensor(dic, phase + ' s_w_grad', s_w_grad)
+                        save_tensor(dic, phase + ' s_b_grad', s_b_grad)
+                        save_tensor(dic, phase + ' d_w_grad', d_w_grad)
+                        save_tensor(dic, phase + ' d_b_grad', d_b_grad)
+                    else:
+                        print_diff(dic, phase + ' m_w_grad', m_w_grad)
+                        print_diff(dic, phase + ' m_b_grad', m_b_grad)
+                        print_diff(dic, phase + ' s_w_grad', s_w_grad)
+                        print_diff(dic, phase + ' s_b_grad', s_b_grad)
+                        print_diff(dic, phase + ' d_w_grad', d_w_grad)
+                        print_diff(dic, phase + ' d_b_grad', d_b_grad)
 
 #----------------------------------------------------------------------------
