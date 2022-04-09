@@ -12,6 +12,7 @@ import torch
 from torch_utils import training_stats
 from torch_utils import misc
 from torch_utils.ops import conv2d_gradfix
+from torch.nn.parallel import DistributedDataParallel as DDP
 
 #----------------------------------------------------------------------------
 
@@ -118,12 +119,15 @@ class StyleGAN2Loss(Loss):
                 training_stats.report('Loss/G/loss', loss_Gmain)
             with torch.autograd.profiler.record_function('Gmain_backward'):
                 loss_Gmain.mean().mul(gain).backward()
-                m_w_grad = self.G_mapping.fc7.weight.grad
-                m_b_grad = self.G_mapping.fc7.bias.grad
-                s_w_grad = self.G_synthesis.b32.conv0.affine.weight.grad
-                s_b_grad = self.G_synthesis.b32.conv0.affine.bias.grad
-                d_w_grad = self.D.b32.conv0.weight.grad
-                d_b_grad = self.D.b32.conv0.bias.grad
+                G_mapping = self.G_mapping.module if isinstance(self.G_mapping, DDP) else self.G_mapping
+                G_synthesis = self.G_synthesis.module if isinstance(self.G_synthesis, DDP) else self.G_synthesis
+                D = self.D.module if isinstance(self.D, DDP) else self.D
+                m_w_grad = G_mapping.fc7.weight.grad
+                m_b_grad = G_mapping.fc7.bias.grad
+                s_w_grad = G_synthesis.b32.conv0.affine.weight.grad
+                s_b_grad = G_synthesis.b32.conv0.affine.bias.grad
+                d_w_grad = D.b32.conv0.weight.grad
+                d_b_grad = D.b32.conv0.bias.grad
                 if save_npz:
                     save_tensor(dic, phase + ' m_w_grad', m_w_grad)
                     save_tensor(dic, phase + ' m_b_grad', m_b_grad)
@@ -170,12 +174,15 @@ class StyleGAN2Loss(Loss):
                 training_stats.report('Loss/G/reg', loss_Gpl)
             with torch.autograd.profiler.record_function('Gpl_backward'):
                 (gen_img[:, 0, 0, 0] * 0 + loss_Gpl).mean().mul(gain).backward()
-                m_w_grad = self.G_mapping.fc7.weight.grad
-                m_b_grad = self.G_mapping.fc7.bias.grad
-                s_w_grad = self.G_synthesis.b32.conv0.affine.weight.grad
-                s_b_grad = self.G_synthesis.b32.conv0.affine.bias.grad
-                d_w_grad = self.D.b32.conv0.weight.grad
-                d_b_grad = self.D.b32.conv0.bias.grad
+                G_mapping = self.G_mapping.module if isinstance(self.G_mapping, DDP) else self.G_mapping
+                G_synthesis = self.G_synthesis.module if isinstance(self.G_synthesis, DDP) else self.G_synthesis
+                D = self.D.module if isinstance(self.D, DDP) else self.D
+                m_w_grad = G_mapping.fc7.weight.grad
+                m_b_grad = G_mapping.fc7.bias.grad
+                s_w_grad = G_synthesis.b32.conv0.affine.weight.grad
+                s_b_grad = G_synthesis.b32.conv0.affine.bias.grad
+                d_w_grad = D.b32.conv0.weight.grad
+                d_b_grad = D.b32.conv0.bias.grad
                 if save_npz:
                     save_tensor(dic, phase + ' m_w_grad', m_w_grad)
                     save_tensor(dic, phase + ' m_b_grad', m_b_grad)
@@ -214,12 +221,15 @@ class StyleGAN2Loss(Loss):
                 loss_Dgen = torch.nn.functional.softplus(gen_logits) # -log(1 - sigmoid(gen_logits))
             with torch.autograd.profiler.record_function('Dgen_backward'):
                 loss_Dgen.mean().mul(gain).backward()
-                m_w_grad = self.G_mapping.fc7.weight.grad
-                m_b_grad = self.G_mapping.fc7.bias.grad
-                s_w_grad = self.G_synthesis.b32.conv0.affine.weight.grad
-                s_b_grad = self.G_synthesis.b32.conv0.affine.bias.grad
-                d_w_grad = self.D.b32.conv0.weight.grad
-                d_b_grad = self.D.b32.conv0.bias.grad
+                G_mapping = self.G_mapping.module if isinstance(self.G_mapping, DDP) else self.G_mapping
+                G_synthesis = self.G_synthesis.module if isinstance(self.G_synthesis, DDP) else self.G_synthesis
+                D = self.D.module if isinstance(self.D, DDP) else self.D
+                m_w_grad = G_mapping.fc7.weight.grad
+                m_b_grad = G_mapping.fc7.bias.grad
+                s_w_grad = G_synthesis.b32.conv0.affine.weight.grad
+                s_b_grad = G_synthesis.b32.conv0.affine.bias.grad
+                d_w_grad = D.b32.conv0.weight.grad
+                d_b_grad = D.b32.conv0.bias.grad
                 if save_npz:
                     save_tensor(dic, phase + ' backward0 m_w_grad', m_w_grad)
                     save_tensor(dic, phase + ' backward0 m_b_grad', m_b_grad)
@@ -277,12 +287,15 @@ class StyleGAN2Loss(Loss):
 
             with torch.autograd.profiler.record_function(name + '_backward'):
                 (real_logits * 0 + loss_Dreal + loss_Dr1).mean().mul(gain).backward()
-                m_w_grad = self.G_mapping.fc7.weight.grad
-                m_b_grad = self.G_mapping.fc7.bias.grad
-                s_w_grad = self.G_synthesis.b32.conv0.affine.weight.grad
-                s_b_grad = self.G_synthesis.b32.conv0.affine.bias.grad
-                d_w_grad = self.D.b32.conv0.weight.grad
-                d_b_grad = self.D.b32.conv0.bias.grad
+                G_mapping = self.G_mapping.module if isinstance(self.G_mapping, DDP) else self.G_mapping
+                G_synthesis = self.G_synthesis.module if isinstance(self.G_synthesis, DDP) else self.G_synthesis
+                D = self.D.module if isinstance(self.D, DDP) else self.D
+                m_w_grad = G_mapping.fc7.weight.grad
+                m_b_grad = G_mapping.fc7.bias.grad
+                s_w_grad = G_synthesis.b32.conv0.affine.weight.grad
+                s_b_grad = G_synthesis.b32.conv0.affine.bias.grad
+                d_w_grad = D.b32.conv0.weight.grad
+                d_b_grad = D.b32.conv0.bias.grad
                 if do_Dmain:
                     if save_npz:
                         save_tensor(dic, phase + ' backward1 m_w_grad', m_w_grad)
