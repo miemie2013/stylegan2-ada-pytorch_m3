@@ -311,7 +311,7 @@ def training_loop(
                 dic['phase_real_img'] = phase_real_img.cpu().detach().numpy()
             else:
                 aaaaaaaaa = dic['phase_real_img']
-                phase_real_img = torch.Tensor(aaaaaaaaa).cuda().to(torch.float32)
+                phase_real_img = torch.Tensor(aaaaaaaaa).to(device).to(torch.float32)
 
             phase_real_img = (phase_real_img.to(device).to(torch.float32) / 127.5 - 1).split(batch_gpu)
             phase_real_c = phase_real_c.to(device).split(batch_gpu)
@@ -337,7 +337,7 @@ def training_loop(
                 dic['all_gen_z'] = all_gen_z.cpu().detach().numpy()
             else:
                 bbbbbbbbb = dic['all_gen_z']
-                all_gen_z = torch.Tensor(bbbbbbbbb).cuda().to(torch.float32)
+                all_gen_z = torch.Tensor(bbbbbbbbb).to(device).to(torch.float32)
             all_gen_z = [phase_gen_z.split(batch_gpu) for phase_gen_z in all_gen_z.split(batch_size)]
             if batch_idx == 0:
                 '''
