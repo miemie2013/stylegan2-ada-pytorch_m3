@@ -74,6 +74,7 @@ zip -r aaa.zip batch*.npz G_00.pth G_19.pth G_ema_00.pth G_ema_19.pth D_00.pth D
 rm -rf batch*.npz G_00.pth G_19.pth G_ema_00.pth G_ema_19.pth D_00.pth D_19.pth
 
 
+cp aaa.zip ../miemieGAN/aaa.zip
 
 
 
