@@ -59,6 +59,17 @@ python train.py --outdir ./StyleGAN2_ADA_Output --data ../data/data42681/afhq/tr
 
 
 
+# 压缩
+rm -rf aaa.zip
+
+
+zip -r aaa.zip batch*.npz G_00.pth G_19.pth G_ema_00.pth G_ema_19.pth D_00.pth D_19.pth
+
+
+rm -rf batch*.npz G_00.pth G_19.pth G_ema_00.pth G_ema_19.pth D_00.pth D_19.pth
+
+
+
 
 
 python train.py --outdir ./StyleGAN2_ADA_Output --data ../data/data42681/afhq/train/cat --gpus=1 --cfg paper512 --batch 2 --aug noaug --resume afhqcat.pkl
