@@ -43,6 +43,11 @@ training/training_loop.py
 而且，除了augment_pipe，其它4个 G.mapping、G.synthesis、D、G_ema 都是DDP模型。
 
 
+# 安装依赖
+cd ~/w*
+pip install -r requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple
+
+
 save_npz = True   # 为True时表示，记录前20步的输入、输出、梯度。
 save_npz = False  # 为False时表示，读取为True时保存的输入，自己和自己对齐。
 
