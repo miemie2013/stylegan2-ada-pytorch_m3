@@ -113,6 +113,7 @@ class StyleGAN2Loss(Loss):
                     save_tensor(dic, phase + ' gen_logits', gen_logits)
                 else:
                     print_diff(dic, phase + ' gen_logits', gen_logits)
+                aaaaaaaa1 = training_stats._counters
                 training_stats.report('Loss/scores/fake', gen_logits)
                 training_stats.report('Loss/signs/fake', gen_logits.sign())
                 loss_Gmain = torch.nn.functional.softplus(-gen_logits) # -log(sigmoid(gen_logits))
