@@ -76,6 +76,8 @@ rm -rf batch*.npz G_00.pth G_19.pth G_ema_00.pth G_ema_19.pth D_00.pth D_19.pth
 
 cp aaa.zip ../miemieGAN/aaa.zip
 
+cp aaa.zip ../ppgan/aaa.zip
+
 
 
 python train.py --outdir ./StyleGAN2_ADA_Output --data ../data/data42681/afhq/train/cat --gpus=1 --cfg paper512 --batch 2 --aug noaug --resume afhqcat.pkl
