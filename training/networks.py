@@ -576,14 +576,21 @@ class SynthesisNetwork(torch.nn.Module):
         self.block_resolutions = [2 ** i for i in range(2, self.img_resolution_log2 + 1)]
         channels_dict = {res: min(channel_base // res, channel_max) for res in self.block_resolutions}
         fp16_resolution = max(2 ** (self.img_resolution_log2 + 1 - num_fp16_res), 8)
+        self.conv = torch.nn.ConvTranspose2d(
+            in_channels=512,
+            out_channels=3,
+            kernel_size=32,
+            stride=1,
+            padding=0,
+            groups=1,
+            bias=False)
         self.num_ws = 8
-        weight = torch.randn([512, 3*32*32])
-        self.weight = torch.nn.Parameter(weight)
 
     def forward(self, ws, **block_kwargs):
         x = ws.sum(1)
-        x = x.matmul(self.weight)
-        x = x.reshape((-1, 3, 32, 32))
+        x = torch.unsqueeze(x, 2)
+        x = torch.unsqueeze(x, 2)
+        x = self.conv(x)
         return x
 
 
@@ -802,12 +809,18 @@ class Discriminator(torch.nn.Module):
         epilogue_kwargs     = {},       # Arguments for DiscriminatorEpilogue.
     ):
         super().__init__()
-        weight = torch.randn([3, 1])
-        self.weight = torch.nn.Parameter(weight)
+        self.conv = torch.nn.Conv2d(
+            in_channels=3,
+            out_channels=1,
+            kernel_size=1,
+            stride=1,
+            padding=0,
+            groups=1,
+            bias=False)
 
     def forward(self, img, c, **block_kwargs):
-        x = img.mean([2, 3])
-        x = x.matmul(self.weight)
+        x = self.conv(img)
+        x = x.mean([2, 3])
         return x
 
 #----------------------------------------------------------------------------
