@@ -95,6 +95,7 @@ class StyleGAN2Loss(Loss):
         这用于DDP模型中的梯度累加，DDP模型训练时，每一次优化器step()之前，可能有K次loss.backward()，
         那么，前K-1次loss.backward()应该使用with module.no_sync():使得梯度可以累加，最后1次loss.backward()。
         '''
+        aaaaaaaa1 = training_stats._counters
 
         # Gmain: Maximize logits for generated images.
         if do_Gmain:
@@ -113,36 +114,35 @@ class StyleGAN2Loss(Loss):
                     save_tensor(dic, phase + ' gen_logits', gen_logits)
                 else:
                     print_diff(dic, phase + ' gen_logits', gen_logits)
-                aaaaaaaa1 = training_stats._counters
                 training_stats.report('Loss/scores/fake', gen_logits)
                 training_stats.report('Loss/signs/fake', gen_logits.sign())
                 loss_Gmain = torch.nn.functional.softplus(-gen_logits) # -log(sigmoid(gen_logits))
                 training_stats.report('Loss/G/loss', loss_Gmain)
             with torch.autograd.profiler.record_function('Gmain_backward'):
                 loss_Gmain.mean().mul(gain).backward()
-                # G_mapping = self.G_mapping.module if isinstance(self.G_mapping, DDP) else self.G_mapping
-                # G_synthesis = self.G_synthesis.module if isinstance(self.G_synthesis, DDP) else self.G_synthesis
-                # D = self.D.module if isinstance(self.D, DDP) else self.D
-                # m_w_grad = G_mapping.fc7.weight.grad
-                # m_b_grad = G_mapping.fc7.bias.grad
-                # s_w_grad = G_synthesis.b32.conv0.affine.weight.grad
-                # s_b_grad = G_synthesis.b32.conv0.affine.bias.grad
-                # d_w_grad = D.b32.conv0.weight.grad
-                # d_b_grad = D.b32.conv0.bias.grad
-                # if save_npz:
-                #     save_tensor(dic, phase + ' m_w_grad', m_w_grad)
-                #     save_tensor(dic, phase + ' m_b_grad', m_b_grad)
-                #     save_tensor(dic, phase + ' s_w_grad', s_w_grad)
-                #     save_tensor(dic, phase + ' s_b_grad', s_b_grad)
-                #     save_tensor(dic, phase + ' d_w_grad', d_w_grad)
-                #     save_tensor(dic, phase + ' d_b_grad', d_b_grad)
-                # else:
-                #     print_diff(dic, phase + ' m_w_grad', m_w_grad)
-                #     print_diff(dic, phase + ' m_b_grad', m_b_grad)
-                #     print_diff(dic, phase + ' s_w_grad', s_w_grad)
-                #     print_diff(dic, phase + ' s_b_grad', s_b_grad)
-                #     print_diff(dic, phase + ' d_w_grad', d_w_grad)
-                #     print_diff(dic, phase + ' d_b_grad', d_b_grad)
+                G_mapping = self.G_mapping.module if isinstance(self.G_mapping, DDP) else self.G_mapping
+                G_synthesis = self.G_synthesis.module if isinstance(self.G_synthesis, DDP) else self.G_synthesis
+                D = self.D.module if isinstance(self.D, DDP) else self.D
+                m_w_grad = G_mapping.fc7.weight.grad
+                m_b_grad = G_mapping.fc7.bias.grad
+                s_w_grad = G_synthesis.b32.conv0.affine.weight.grad
+                s_b_grad = G_synthesis.b32.conv0.affine.bias.grad
+                d_w_grad = D.b32.conv0.weight.grad
+                d_b_grad = D.b32.conv0.bias.grad
+                if save_npz:
+                    save_tensor(dic, phase + ' m_w_grad', m_w_grad)
+                    save_tensor(dic, phase + ' m_b_grad', m_b_grad)
+                    save_tensor(dic, phase + ' s_w_grad', s_w_grad)
+                    save_tensor(dic, phase + ' s_b_grad', s_b_grad)
+                    save_tensor(dic, phase + ' d_w_grad', d_w_grad)
+                    save_tensor(dic, phase + ' d_b_grad', d_b_grad)
+                else:
+                    print_diff(dic, phase + ' m_w_grad', m_w_grad)
+                    print_diff(dic, phase + ' m_b_grad', m_b_grad)
+                    print_diff(dic, phase + ' s_w_grad', s_w_grad)
+                    print_diff(dic, phase + ' s_b_grad', s_b_grad)
+                    print_diff(dic, phase + ' d_w_grad', d_w_grad)
+                    print_diff(dic, phase + ' d_b_grad', d_b_grad)
 
         # Gpl: Apply path length regularization.
         if do_Gpl:
@@ -175,29 +175,29 @@ class StyleGAN2Loss(Loss):
                 training_stats.report('Loss/G/reg', loss_Gpl)
             with torch.autograd.profiler.record_function('Gpl_backward'):
                 (gen_img[:, 0, 0, 0] * 0 + loss_Gpl).mean().mul(gain).backward()
-                # G_mapping = self.G_mapping.module if isinstance(self.G_mapping, DDP) else self.G_mapping
-                # G_synthesis = self.G_synthesis.module if isinstance(self.G_synthesis, DDP) else self.G_synthesis
-                # D = self.D.module if isinstance(self.D, DDP) else self.D
-                # m_w_grad = G_mapping.fc7.weight.grad
-                # m_b_grad = G_mapping.fc7.bias.grad
-                # s_w_grad = G_synthesis.b32.conv0.affine.weight.grad
-                # s_b_grad = G_synthesis.b32.conv0.affine.bias.grad
-                # d_w_grad = D.b32.conv0.weight.grad
-                # d_b_grad = D.b32.conv0.bias.grad
-                # if save_npz:
-                #     save_tensor(dic, phase + ' m_w_grad', m_w_grad)
-                #     save_tensor(dic, phase + ' m_b_grad', m_b_grad)
-                #     save_tensor(dic, phase + ' s_w_grad', s_w_grad)
-                #     save_tensor(dic, phase + ' s_b_grad', s_b_grad)
-                #     save_tensor(dic, phase + ' d_w_grad', d_w_grad)
-                #     save_tensor(dic, phase + ' d_b_grad', d_b_grad)
-                # else:
-                #     print_diff(dic, phase + ' m_w_grad', m_w_grad)
-                #     print_diff(dic, phase + ' m_b_grad', m_b_grad)
-                #     print_diff(dic, phase + ' s_w_grad', s_w_grad)
-                #     print_diff(dic, phase + ' s_b_grad', s_b_grad)
-                #     print_diff(dic, phase + ' d_w_grad', d_w_grad)
-                #     print_diff(dic, phase + ' d_b_grad', d_b_grad)
+                G_mapping = self.G_mapping.module if isinstance(self.G_mapping, DDP) else self.G_mapping
+                G_synthesis = self.G_synthesis.module if isinstance(self.G_synthesis, DDP) else self.G_synthesis
+                D = self.D.module if isinstance(self.D, DDP) else self.D
+                m_w_grad = G_mapping.fc7.weight.grad
+                m_b_grad = G_mapping.fc7.bias.grad
+                s_w_grad = G_synthesis.b32.conv0.affine.weight.grad
+                s_b_grad = G_synthesis.b32.conv0.affine.bias.grad
+                d_w_grad = D.b32.conv0.weight.grad
+                d_b_grad = D.b32.conv0.bias.grad
+                if save_npz:
+                    save_tensor(dic, phase + ' m_w_grad', m_w_grad)
+                    save_tensor(dic, phase + ' m_b_grad', m_b_grad)
+                    save_tensor(dic, phase + ' s_w_grad', s_w_grad)
+                    save_tensor(dic, phase + ' s_b_grad', s_b_grad)
+                    save_tensor(dic, phase + ' d_w_grad', d_w_grad)
+                    save_tensor(dic, phase + ' d_b_grad', d_b_grad)
+                else:
+                    print_diff(dic, phase + ' m_w_grad', m_w_grad)
+                    print_diff(dic, phase + ' m_b_grad', m_b_grad)
+                    print_diff(dic, phase + ' s_w_grad', s_w_grad)
+                    print_diff(dic, phase + ' s_b_grad', s_b_grad)
+                    print_diff(dic, phase + ' d_w_grad', d_w_grad)
+                    print_diff(dic, phase + ' d_b_grad', d_b_grad)
 
         # Dmain: Minimize logits for generated images.
         loss_Dgen = 0
@@ -222,29 +222,29 @@ class StyleGAN2Loss(Loss):
                 loss_Dgen = torch.nn.functional.softplus(gen_logits) # -log(1 - sigmoid(gen_logits))
             with torch.autograd.profiler.record_function('Dgen_backward'):
                 loss_Dgen.mean().mul(gain).backward()
-                # G_mapping = self.G_mapping.module if isinstance(self.G_mapping, DDP) else self.G_mapping
-                # G_synthesis = self.G_synthesis.module if isinstance(self.G_synthesis, DDP) else self.G_synthesis
-                # D = self.D.module if isinstance(self.D, DDP) else self.D
-                # m_w_grad = G_mapping.fc7.weight.grad
-                # m_b_grad = G_mapping.fc7.bias.grad
-                # s_w_grad = G_synthesis.b32.conv0.affine.weight.grad
-                # s_b_grad = G_synthesis.b32.conv0.affine.bias.grad
-                # d_w_grad = D.b32.conv0.weight.grad
-                # d_b_grad = D.b32.conv0.bias.grad
-                # if save_npz:
-                #     save_tensor(dic, phase + ' backward0 m_w_grad', m_w_grad)
-                #     save_tensor(dic, phase + ' backward0 m_b_grad', m_b_grad)
-                #     save_tensor(dic, phase + ' backward0 s_w_grad', s_w_grad)
-                #     save_tensor(dic, phase + ' backward0 s_b_grad', s_b_grad)
-                #     save_tensor(dic, phase + ' backward0 d_w_grad', d_w_grad)
-                #     save_tensor(dic, phase + ' backward0 d_b_grad', d_b_grad)
-                # else:
-                #     print_diff(dic, phase + ' backward0 m_w_grad', m_w_grad)
-                #     print_diff(dic, phase + ' backward0 m_b_grad', m_b_grad)
-                #     print_diff(dic, phase + ' backward0 s_w_grad', s_w_grad)
-                #     print_diff(dic, phase + ' backward0 s_b_grad', s_b_grad)
-                #     print_diff(dic, phase + ' backward0 d_w_grad', d_w_grad)
-                #     print_diff(dic, phase + ' backward0 d_b_grad', d_b_grad)
+                G_mapping = self.G_mapping.module if isinstance(self.G_mapping, DDP) else self.G_mapping
+                G_synthesis = self.G_synthesis.module if isinstance(self.G_synthesis, DDP) else self.G_synthesis
+                D = self.D.module if isinstance(self.D, DDP) else self.D
+                m_w_grad = G_mapping.fc7.weight.grad
+                m_b_grad = G_mapping.fc7.bias.grad
+                s_w_grad = G_synthesis.b32.conv0.affine.weight.grad
+                s_b_grad = G_synthesis.b32.conv0.affine.bias.grad
+                d_w_grad = D.b32.conv0.weight.grad
+                d_b_grad = D.b32.conv0.bias.grad
+                if save_npz:
+                    save_tensor(dic, phase + ' backward0 m_w_grad', m_w_grad)
+                    save_tensor(dic, phase + ' backward0 m_b_grad', m_b_grad)
+                    save_tensor(dic, phase + ' backward0 s_w_grad', s_w_grad)
+                    save_tensor(dic, phase + ' backward0 s_b_grad', s_b_grad)
+                    save_tensor(dic, phase + ' backward0 d_w_grad', d_w_grad)
+                    save_tensor(dic, phase + ' backward0 d_b_grad', d_b_grad)
+                else:
+                    print_diff(dic, phase + ' backward0 m_w_grad', m_w_grad)
+                    print_diff(dic, phase + ' backward0 m_b_grad', m_b_grad)
+                    print_diff(dic, phase + ' backward0 s_w_grad', s_w_grad)
+                    print_diff(dic, phase + ' backward0 s_b_grad', s_b_grad)
+                    print_diff(dic, phase + ' backward0 d_w_grad', d_w_grad)
+                    print_diff(dic, phase + ' backward0 d_b_grad', d_b_grad)
 
         # Dmain: Maximize logits for real images.
         # Dr1: Apply R1 regularization.
@@ -288,44 +288,44 @@ class StyleGAN2Loss(Loss):
 
             with torch.autograd.profiler.record_function(name + '_backward'):
                 (real_logits * 0 + loss_Dreal + loss_Dr1).mean().mul(gain).backward()
-                # G_mapping = self.G_mapping.module if isinstance(self.G_mapping, DDP) else self.G_mapping
-                # G_synthesis = self.G_synthesis.module if isinstance(self.G_synthesis, DDP) else self.G_synthesis
-                # D = self.D.module if isinstance(self.D, DDP) else self.D
-                # m_w_grad = G_mapping.fc7.weight.grad
-                # m_b_grad = G_mapping.fc7.bias.grad
-                # s_w_grad = G_synthesis.b32.conv0.affine.weight.grad
-                # s_b_grad = G_synthesis.b32.conv0.affine.bias.grad
-                # d_w_grad = D.b32.conv0.weight.grad
-                # d_b_grad = D.b32.conv0.bias.grad
-                # if do_Dmain:
-                #     if save_npz:
-                #         save_tensor(dic, phase + ' backward1 m_w_grad', m_w_grad)
-                #         save_tensor(dic, phase + ' backward1 m_b_grad', m_b_grad)
-                #         save_tensor(dic, phase + ' backward1 s_w_grad', s_w_grad)
-                #         save_tensor(dic, phase + ' backward1 s_b_grad', s_b_grad)
-                #         save_tensor(dic, phase + ' backward1 d_w_grad', d_w_grad)
-                #         save_tensor(dic, phase + ' backward1 d_b_grad', d_b_grad)
-                #     else:
-                #         print_diff(dic, phase + ' backward1 m_w_grad', m_w_grad)
-                #         print_diff(dic, phase + ' backward1 m_b_grad', m_b_grad)
-                #         print_diff(dic, phase + ' backward1 s_w_grad', s_w_grad)
-                #         print_diff(dic, phase + ' backward1 s_b_grad', s_b_grad)
-                #         print_diff(dic, phase + ' backward1 d_w_grad', d_w_grad)
-                #         print_diff(dic, phase + ' backward1 d_b_grad', d_b_grad)
-                # if do_Dr1:
-                #     if save_npz:
-                #         save_tensor(dic, phase + ' m_w_grad', m_w_grad)
-                #         save_tensor(dic, phase + ' m_b_grad', m_b_grad)
-                #         save_tensor(dic, phase + ' s_w_grad', s_w_grad)
-                #         save_tensor(dic, phase + ' s_b_grad', s_b_grad)
-                #         save_tensor(dic, phase + ' d_w_grad', d_w_grad)
-                #         save_tensor(dic, phase + ' d_b_grad', d_b_grad)
-                #     else:
-                #         print_diff(dic, phase + ' m_w_grad', m_w_grad)
-                #         print_diff(dic, phase + ' m_b_grad', m_b_grad)
-                #         print_diff(dic, phase + ' s_w_grad', s_w_grad)
-                #         print_diff(dic, phase + ' s_b_grad', s_b_grad)
-                #         print_diff(dic, phase + ' d_w_grad', d_w_grad)
-                #         print_diff(dic, phase + ' d_b_grad', d_b_grad)
+                G_mapping = self.G_mapping.module if isinstance(self.G_mapping, DDP) else self.G_mapping
+                G_synthesis = self.G_synthesis.module if isinstance(self.G_synthesis, DDP) else self.G_synthesis
+                D = self.D.module if isinstance(self.D, DDP) else self.D
+                m_w_grad = G_mapping.fc7.weight.grad
+                m_b_grad = G_mapping.fc7.bias.grad
+                s_w_grad = G_synthesis.b32.conv0.affine.weight.grad
+                s_b_grad = G_synthesis.b32.conv0.affine.bias.grad
+                d_w_grad = D.b32.conv0.weight.grad
+                d_b_grad = D.b32.conv0.bias.grad
+                if do_Dmain:
+                    if save_npz:
+                        save_tensor(dic, phase + ' backward1 m_w_grad', m_w_grad)
+                        save_tensor(dic, phase + ' backward1 m_b_grad', m_b_grad)
+                        save_tensor(dic, phase + ' backward1 s_w_grad', s_w_grad)
+                        save_tensor(dic, phase + ' backward1 s_b_grad', s_b_grad)
+                        save_tensor(dic, phase + ' backward1 d_w_grad', d_w_grad)
+                        save_tensor(dic, phase + ' backward1 d_b_grad', d_b_grad)
+                    else:
+                        print_diff(dic, phase + ' backward1 m_w_grad', m_w_grad)
+                        print_diff(dic, phase + ' backward1 m_b_grad', m_b_grad)
+                        print_diff(dic, phase + ' backward1 s_w_grad', s_w_grad)
+                        print_diff(dic, phase + ' backward1 s_b_grad', s_b_grad)
+                        print_diff(dic, phase + ' backward1 d_w_grad', d_w_grad)
+                        print_diff(dic, phase + ' backward1 d_b_grad', d_b_grad)
+                if do_Dr1:
+                    if save_npz:
+                        save_tensor(dic, phase + ' m_w_grad', m_w_grad)
+                        save_tensor(dic, phase + ' m_b_grad', m_b_grad)
+                        save_tensor(dic, phase + ' s_w_grad', s_w_grad)
+                        save_tensor(dic, phase + ' s_b_grad', s_b_grad)
+                        save_tensor(dic, phase + ' d_w_grad', d_w_grad)
+                        save_tensor(dic, phase + ' d_b_grad', d_b_grad)
+                    else:
+                        print_diff(dic, phase + ' m_w_grad', m_w_grad)
+                        print_diff(dic, phase + ' m_b_grad', m_b_grad)
+                        print_diff(dic, phase + ' s_w_grad', s_w_grad)
+                        print_diff(dic, phase + ' s_b_grad', s_b_grad)
+                        print_diff(dic, phase + ' d_w_grad', d_w_grad)
+                        print_diff(dic, phase + ' d_b_grad', d_b_grad)
 
 #----------------------------------------------------------------------------
