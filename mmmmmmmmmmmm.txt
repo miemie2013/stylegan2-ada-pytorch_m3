@@ -64,6 +64,14 @@ python train.py --outdir ./StyleGAN2_ADA_Output --data ../data/data42681/afhq/tr
 
 
 
+进阶：单卡和多卡进行对齐（用 单卡批大小8 实现 双卡总批大小8 的效果）
+把 DiscriminatorEpilogue 类的__init__()方法的
+        # mbstd_num_channels = 0
+解除注释，即不使用 MinibatchStdLayer ，因为 MinibatchStdLayer 会有类似BN层的不同图片的数据交流，
+使用的话要实现类似同步BN的操作，会加大对齐难度，所以不使用这个层。
+
+
+
 # 压缩
 rm -rf aaa.zip
 
