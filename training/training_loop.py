@@ -406,11 +406,6 @@ def training_loop(
                 #     pass
             if phase.end_event is not None:
                 phase.end_event.record(torch.cuda.current_stream(device))
-            if save_npz:
-                dic['w_avg %s' % phase.name] = G.mapping.w_avg.cpu().detach().numpy()
-            else:
-                kkk = 'w_avg %s' % phase.name; ddd = np.sum((dic[kkk] - G.mapping.w_avg.cpu().detach().numpy()) ** 2)
-                print('diff=%.6f (%s)' % (ddd, kkk))
 
         if save_npz:
             save_npz_name = 'batch%.5d_rank%.2d'%(batch_idx, rank)
