@@ -142,6 +142,22 @@ python style_mixing.py --outdir=out_style_mixing --network=afhqcat.pkl
 python style_mixing.py --outdir=out_style_mixing --network=metfaces.pkl
 
 
+
+# 真实图片生成潜在向量，并
+wget https://nvlabs-fi-cdn.nvidia.com/stylegan2-ada-pytorch/pretrained/metrics/vgg16.pt
+
+(图片来自afhqcat验证集)
+python projector.py --outdir=out --target=./flickr_cat_000008.jpg --network=afhqcat.pkl
+
+python generate.py --outdir=out --projected-w=./out/projected_w.npz --network=afhqcat.pkl
+
+
+
+# 2张真实图片生成潜在向量，并进行style_mixing
+
+
+
+
 # save_pth。保存为.pth模型。（可以给miemieGAN的tools/convert_weights.py脚本转换权重用。）
 
 python save_pth.py --network=afhqcat.pkl --g_ema_name=G_ema_afhqcat.pth --g_name=G_afhqcat.pth --d_name=D_afhqcat.pth
